@@ -16,6 +16,11 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml",
 }
 
+# Manual name corrections (source name → correct name)
+NAME_CORRECTIONS = {
+    "Xin Yu Wang": "Xinyu Wang",
+}
+
 # Tennis Abstract URLs
 TA_ATP_URL = "https://tennisabstract.com/reports/atpRankings.html"
 TA_WTA_URL = "https://tennisabstract.com/reports/wtaRankings.html"
@@ -64,6 +69,7 @@ def _fetch_from_tennis_abstract(url: str, gender: str, max_rank: int) -> list[di
 
         # Name uses \xa0 (non-breaking space) — replace with regular space
         name = cells[1].get_text(strip=True).replace("\xa0", " ")
+        name = NAME_CORRECTIONS.get(name, name)
         country = cells[2].get_text(strip=True)
 
         players.append({
@@ -105,8 +111,9 @@ def _fetch_from_rapidapi(url: str, gender: str, max_rank: int) -> list[dict]:
             continue
         team = entry.get("team", {})
         country = entry.get("country", {}) or team.get("country", {})
+        raw_name = entry.get("rowName", team.get("name", ""))
         players.append({
-            "name": entry.get("rowName", team.get("name", "")),
+            "name": NAME_CORRECTIONS.get(raw_name, raw_name),
             "rank": rank,
             "gender": gender,
             "country_code": country.get("alpha3", ""),
