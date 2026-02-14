@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-<head><title>TennisDraws Logo Export</title></head>
+<head><title>Tennis Entry List & Schedules — Logo Export</title></head>
 <body style="background:#222;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;font-family:sans-serif;color:#fff">
-<h2>TennisDraws Logo Export</h2>
+<h2>Tennis Entry List & Schedules — Logo Export</h2>
 <p style="color:#999">Right-click any image below and "Save Image As..." to download</p>
 
 <div style="display:flex;gap:40px;flex-wrap:wrap;justify-content:center">
@@ -138,20 +138,20 @@ function drawLogo(ctx, size) {
     // === BRAND NAME (centered) ===
     ctx.textAlign = 'center';
     ctx.fillStyle = '#8899aa';
-    ctx.font = '600 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    var tennisW = ctx.measureText('Tennis').width;
-    ctx.font = '800 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    var drawsW = ctx.measureText('Draws').width;
-    var totalW = tennisW + drawsW + 8;
+    ctx.font = '600 52px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    var part1W = ctx.measureText('Tennis Entry List & ').width;
+    ctx.font = '800 52px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    var part2W = ctx.measureText('Schedules').width;
+    var totalW = part1W + part2W;
     var startX = W/2 - totalW/2;
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#8899aa';
-    ctx.font = '600 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillText('Tennis', startX, 210);
+    ctx.font = '600 52px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText('Tennis Entry List & ', startX, 210);
     ctx.fillStyle = '#00e68a';
-    ctx.font = '800 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillText('Draws', startX + tennisW + 8, 210);
+    ctx.font = '800 52px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText('Schedules', startX + part1W, 210);
 
     // === TAGLINE ===
     ctx.textAlign = 'center';
