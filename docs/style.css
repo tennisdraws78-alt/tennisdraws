@@ -1034,6 +1034,32 @@ main {
     opacity: 0.5;
 }
 
+.wd-source-link {
+    font-size: 11px;
+    color: var(--accent-blue);
+    opacity: 0.7;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    transition: opacity 0.15s;
+}
+.wd-source-link:hover { opacity: 1; }
+.wd-source-link svg { flex-shrink: 0; }
+
+/* Source links in tournament detail table */
+.source-link {
+    color: var(--accent-blue);
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+.source-link:hover { opacity: 1; }
+.source-link svg { flex-shrink: 0; }
+
 .wd-week-group { margin-bottom: 24px; }
 
 /* ===== EMPTY STATE ===== */

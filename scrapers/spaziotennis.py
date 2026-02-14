@@ -439,6 +439,7 @@ def _parse_tournament_page(html: str, tournament_info: dict) -> list[dict]:
                 "withdrawn": player["withdrawn"],
                 "gender": tournament_info["gender"],
                 "source": "SpazioTennis",
+                "source_url": tournament_info.get("url", ""),
             })
 
     # If no structured entries found, try plain-name parsing as fallback.
@@ -465,6 +466,7 @@ def _parse_tournament_page(html: str, tournament_info: dict) -> list[dict]:
                     "withdrawn": player["withdrawn"],
                     "gender": tournament_info["gender"],
                     "source": "SpazioTennis",
+                    "source_url": tournament_info.get("url", ""),
                 })
 
     return entries
