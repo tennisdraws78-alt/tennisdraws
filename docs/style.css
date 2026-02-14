@@ -925,6 +925,23 @@ main {
 .entry-table tbody tr.withdrawn-row { opacity: 0.5; }
 .entry-table tbody tr.withdrawn-row td.player-col a { text-decoration: line-through; }
 
+/* Unranked player rows in full entry lists */
+.entry-table tbody tr.unranked-row td.player-col { color: var(--text-secondary); }
+.entry-table tbody tr.unranked-row td.rank-col { opacity: 0.5; }
+
+/* Full entry list badge */
+.full-list-badge {
+    display: inline-block;
+    font-size: 10px;
+    background: rgba(5, 150, 105, 0.15);
+    color: #059669;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 /* ===== WITHDRAWALS VIEW ===== */
 .withdrawals-view {
     padding: 24px;

@@ -19,6 +19,7 @@ from output.html_writer import (
 def write_site_data(
     players: list[dict],
     player_entry_map: dict[str, list[dict]],
+    raw_entries: list[dict] = None,
     output_dir: str = None,
 ) -> str:
     """Generate docs/data.js with all player and tournament data.
@@ -26,6 +27,8 @@ def write_site_data(
     Args:
         players: List of ranked players from rankings API.
         player_entry_map: Dict mapping "name|gender" -> list of entry dicts.
+        raw_entries: Optional list of raw entry dicts for full entry lists
+                     (Challenger + WTA 125 tiers — includes unranked players).
         output_dir: Output directory (default: docs/ in project root).
 
     Returns:
@@ -143,6 +146,102 @@ def write_site_data(
             "sections": sorted(t["sections"]),
         })
 
+    # --- Build full entry lists for Challenger/125 tiers ---
+    full_entries_data = {}
+    if raw_entries:
+        # Group raw entries by normalized tournament name
+        raw_by_tournament = defaultdict(list)
+        raw_tournament_meta = {}  # key -> {name, tier, week, source, gender}
+
+        for entry in raw_entries:
+            tourn_name = _normalize_tournament_name(entry.get("tournament", ""))
+            week_val = entry.get("week", "")
+            week_val = re.sub(r"\s*\u2754\s*$", "", week_val)
+            week_val = re.sub(r"\s*\?\s*$", "", week_val).strip()
+            week_val = _normalize_week(week_val)
+            week_val = week_merge_map.get(week_val, week_val)
+
+            t_key = tourn_name.lower()
+
+            if t_key not in raw_tournament_meta:
+                raw_tournament_meta[t_key] = {
+                    "name": tourn_name,
+                    "tier": entry.get("tier", ""),
+                    "week": week_val,
+                    "source": entry.get("source", ""),
+                    "gender": "Women" if entry.get("gender") == "F" else "Men",
+                }
+
+            # Dedup players by name within a tournament
+            player_name = entry.get("player_name", "")
+            section = entry.get("section", "Main Draw")
+            country = entry.get("player_country", "") or entry.get("country_code", "")
+            raw_by_tournament[t_key].append({
+                "n": player_name,
+                "r": entry.get("player_rank", 0),
+                "c": country,
+                "s": section,
+                "w": bool(entry.get("withdrawn")),
+            })
+
+        # Deduplicate players within each tournament and build output
+        for t_key, players_list in raw_by_tournament.items():
+            seen_names = {}  # (name_lower, section) -> player dict
+            for p in players_list:
+                pkey = (p["n"].lower(), p["s"])
+                if pkey not in seen_names:
+                    seen_names[pkey] = p
+                else:
+                    # Prefer entry with rank data and country data
+                    existing = seen_names[pkey]
+                    if (not existing["r"] and p["r"]) or (not existing["c"] and p["c"]):
+                        # Merge: take best of both
+                        if p["r"] and not existing["r"]:
+                            existing["r"] = p["r"]
+                        if p["c"] and not existing["c"]:
+                            existing["c"] = p["c"]
+            deduped_players = list(seen_names.values())
+
+            # Sort by rank (0 = unranked at end)
+            deduped_players.sort(
+                key=lambda p: (p["r"] if p["r"] > 0 else 9999)
+            )
+
+            meta = raw_tournament_meta[t_key]
+            full_entries_data[t_key] = {
+                "name": meta["name"],
+                "tier": meta["tier"],
+                "week": meta["week"],
+                "source": meta["source"],
+                "gender": meta["gender"],
+                "players": deduped_players,
+            }
+
+            # Also add/update in tournaments_data if not already present
+            if t_key not in seen_tournaments:
+                seen_tournaments[t_key] = True
+                tournaments_data.append({
+                    "name": meta["name"],
+                    "tier": meta["tier"],
+                    "week": meta["week"],
+                    "playerCount": len(deduped_players),
+                    "sections": sorted(set(p["s"] for p in deduped_players)),
+                    "hasFullList": True,
+                })
+            else:
+                # Update player count to reflect full list
+                for td in tournaments_data:
+                    if td["name"].lower() == t_key:
+                        td["playerCount"] = len(deduped_players)
+                        td["hasFullList"] = True
+                        break
+
+        # Re-sort tournaments by week
+        tournaments_data.sort(key=lambda t: _week_sort_key(t.get("week", "")))
+
+        print(f"  Full entry lists: {len(full_entries_data)} tournaments, "
+              f"{sum(len(fe['players']) for fe in full_entries_data.values())} total players")
+
     # --- Compute stats ---
     total_players = len(players_data)
     players_with_entries = sum(1 for p in players_data if p["entries"])
@@ -162,6 +261,7 @@ def write_site_data(
         "players": players_data,
         "weeks": sorted_weeks,
         "tournaments": tournaments_data,
+        "fullEntries": full_entries_data,
         "stats": stats,
     }
 

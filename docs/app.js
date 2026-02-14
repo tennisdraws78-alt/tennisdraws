@@ -104,6 +104,49 @@ function buildTournamentEntries() {
     for (var ki = 0; ki < keys.length; ki++) {
         map[keys[ki]].entries.sort(function (a, b) { return a.rank - b.rank; });
     }
+
+    // Merge full entry lists (Challenger + WTA 125) from D.fullEntries
+    if (D.fullEntries) {
+        var feKeys = Object.keys(D.fullEntries);
+        for (var fi = 0; fi < feKeys.length; fi++) {
+            var feKey = feKeys[fi];
+            var fe = D.fullEntries[feKey];
+            if (!map[feKey]) {
+                map[feKey] = {
+                    name: fe.name,
+                    tier: fe.tier,
+                    week: fe.week,
+                    entries: [],
+                    sections: {},
+                    hasFullList: true,
+                };
+            } else {
+                map[feKey].hasFullList = true;
+            }
+            // Build full player list from compact format
+            var fullPlayers = [];
+            for (var fpi = 0; fpi < fe.players.length; fpi++) {
+                var fp = fe.players[fpi];
+                fullPlayers.push({
+                    rank: fp.r || 0,
+                    name: fp.n,
+                    gender: fe.gender || "Women",
+                    country: fp.c,
+                    section: fp.s || "Main Draw",
+                    source: fe.source || "",
+                    withdrawn: fp.w || false,
+                });
+            }
+            // Replace entries with full list
+            map[feKey].entries = fullPlayers;
+            // Rebuild sections
+            map[feKey].sections = {};
+            for (var si = 0; si < fullPlayers.length; si++) {
+                map[feKey].sections[fullPlayers[si].section] = true;
+            }
+        }
+    }
+
     return map;
 }
 var tournamentEntries = buildTournamentEntries();
@@ -191,10 +234,19 @@ function route() {
         renderPlayerProfile(playerName);
     } else if (hash === "#/tournaments") {
         state.currentView = "tournaments";
+        state.tournamentTierFilter = "all";
         controls.classList.add("hidden");
         resultsCount.style.display = "none";
         var tournNav = document.querySelector('[data-nav="tournaments"]');
         if (tournNav) tournNav.classList.add("active");
+        renderTournamentBrowser();
+    } else if (hash === "#/entry-lists") {
+        state.currentView = "entry-lists";
+        controls.classList.add("hidden");
+        resultsCount.style.display = "none";
+        var elNav = document.querySelector('[data-nav="entry-lists"]');
+        if (elNav) elNav.classList.add("active");
+        state.tournamentTierFilter = "challenger-125";
         renderTournamentBrowser();
     } else if (hash === "#/withdrawals") {
         state.currentView = "withdrawals";
@@ -474,7 +526,13 @@ function renderTournamentBrowser() {
     var filtered = [];
     for (var i = 0; i < tournList.length; i++) {
         var t = tournList[i];
-        if (state.tournamentTierFilter !== "all" && t.tier !== state.tournamentTierFilter) continue;
+        if (state.tournamentTierFilter === "challenger-125") {
+            // Special filter: show only Challenger + WTA 125
+            var tl = (t.tier || "").toLowerCase();
+            if (tl.indexOf("challenger") === -1 && tl.indexOf("125") === -1) continue;
+        } else if (state.tournamentTierFilter !== "all" && t.tier !== state.tournamentTierFilter) {
+            continue;
+        }
         filtered.push(t);
     }
 
@@ -487,16 +545,31 @@ function renderTournamentBrowser() {
         weekGroups[wk].push(filtered[i]);
     }
 
+    var isEntryListsView = state.tournamentTierFilter === "challenger-125";
+    var viewTitle = isEntryListsView ? "Entry Lists" : "Tournaments";
+
     var html = '<div class="tournaments-view">';
-    html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><span class="bc-current">Tournaments</span></div>';
-    html += '<div class="section-title">Tournaments (' + filtered.length + ')</div>';
+    html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + viewTitle + '</span></div>';
+    html += '<div class="section-title">' + viewTitle + ' (' + filtered.length + ')</div>';
 
     // Tier filter buttons
     html += '<div class="tier-filters">';
-    html += '<button class="tier-btn' + (state.tournamentTierFilter === "all" ? " active" : "") + '" data-tier="all">All</button>';
-    for (var ti = 0; ti < tierList.length; ti++) {
-        var isActive = state.tournamentTierFilter === tierList[ti] ? " active" : "";
-        html += '<button class="tier-btn' + isActive + '" data-tier="' + esc(tierList[ti]) + '">' + esc(tierList[ti]) + '</button>';
+    if (isEntryListsView) {
+        // Entry Lists view: show "All" as active (meaning all Challenger+125)
+        html += '<button class="tier-btn active" data-tier="challenger-125">All</button>';
+        // Also add individual tier buttons for the filtered tiers
+        for (var ti = 0; ti < tierList.length; ti++) {
+            var tl = tierList[ti].toLowerCase();
+            if (tl.indexOf("challenger") !== -1 || tl.indexOf("125") !== -1) {
+                html += '<button class="tier-btn" data-tier="' + esc(tierList[ti]) + '">' + esc(tierList[ti]) + '</button>';
+            }
+        }
+    } else {
+        html += '<button class="tier-btn' + (state.tournamentTierFilter === "all" ? " active" : "") + '" data-tier="all">All</button>';
+        for (var ti = 0; ti < tierList.length; ti++) {
+            var isActive = state.tournamentTierFilter === tierList[ti] ? " active" : "";
+            html += '<button class="tier-btn' + isActive + '" data-tier="' + esc(tierList[ti]) + '">' + esc(tierList[ti]) + '</button>';
+        }
     }
     html += '</div>';
 
@@ -575,6 +648,7 @@ function renderTournamentDetail(name) {
     html += '<div class="tournament-title">' + esc(tourn.name) + '</div>';
     html += '<div class="tournament-meta">';
     html += '<span class="tournament-badge ' + getBadgeClass(tourn.tier) + '">' + esc(tourn.tier) + '</span>';
+    if (tourn.hasFullList) html += '<span class="full-list-badge">Full Entry List</span>';
     html += '<span class="tournament-week-label">' + esc(tourn.week) + '</span>';
     html += '<span class="tournament-player-count">' + tourn.entries.length + ' players</span>';
     html += '</div></div></div>';
@@ -599,9 +673,15 @@ function renderTournamentDetail(name) {
     for (var i = 0; i < entries.length; i++) {
         var e = entries[i];
         var wdClass = e.withdrawn ? " withdrawn-row" : "";
-        html += '<tr class="' + wdClass + '">';
-        html += '<td class="rank-col">' + e.rank + '</td>';
-        html += '<td class="player-col"><a href="#/player/' + encName(e.name) + '">' + esc(e.name) + '</a>';
+        var isRanked = !!playerIndex[e.name.toLowerCase()];
+        if (!isRanked && tourn.hasFullList) wdClass += " unranked-row";
+        html += '<tr class="' + wdClass.trim() + '">';
+        html += '<td class="rank-col">' + (e.rank || "—") + '</td>';
+        if (isRanked) {
+            html += '<td class="player-col"><a href="#/player/' + encName(e.name) + '">' + esc(e.name) + '</a>';
+        } else {
+            html += '<td class="player-col">' + esc(e.name);
+        }
         if (e.withdrawn) html += ' <span class="wd-tag">WD</span>';
         html += '</td>';
         html += '<td class="ctry-col">' + esc(e.country) + '</td>';

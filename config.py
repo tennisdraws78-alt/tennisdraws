@@ -18,6 +18,7 @@ SPAZIOTENNIS_HUB_URL = "https://www.spaziotennis.com/trn/ent/tennis-entry-list-2
 ITF_ENTRIES_URL = "https://itf-entries.netlify.app/"
 WTA_API_URL = "https://api.wtatennis.com/tennis/tournaments/"
 WTA_PLAYER_LIST_URL = "https://www.wtatennis.com/tournaments/{id}/{slug}/{year}/player-list"
+WTA125_TOMIST_URL = "https://tomistgg.github.io/tenis-fem-arg/"
 
 # Scraping settings
 REQUEST_DELAY = 1.5  # seconds between requests

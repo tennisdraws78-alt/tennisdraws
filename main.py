@@ -30,6 +30,7 @@ from scrapers.ticktock import scrape_all as scrape_ticktock
 from scrapers.spaziotennis import scrape_all as scrape_spazio
 from scrapers.wta_official import scrape_all as scrape_wta
 from scrapers.itf_entries import scrape_all as scrape_itf
+from scrapers.wta125_tomist import scrape_all as scrape_wta125
 from matching.name_matcher import build_player_entry_map
 from output.csv_writer import write_csv
 from output.site_writer import write_site_data
@@ -65,6 +66,11 @@ def main():
         "--skip-spazio",
         action="store_true",
         help="Skip Spazio Tennis scraping",
+    )
+    parser.add_argument(
+        "--skip-wta125",
+        action="store_true",
+        help="Skip WTA 125 TomistGG scraping",
     )
     parser.add_argument(
         "--limit-itf",
@@ -130,7 +136,17 @@ def main():
         print("Skipping WTA Official (--skip-wta)")
         print()
 
-    # Source 4: ITF Entries (requires Playwright)
+    # Source 4: WTA 125 from TomistGG
+    if not args.skip_wta125:
+        time.sleep(1)
+        wta125_entries = scrape_wta125()
+        all_entries.extend(wta125_entries)
+        print()
+    else:
+        print("Skipping WTA 125 TomistGG (--skip-wta125)")
+        print()
+
+    # Source 5: ITF Entries (requires Playwright)
     if not args.skip_itf:
         time.sleep(1)
         itf_entries = scrape_itf(limit=args.limit_itf)
@@ -154,10 +170,18 @@ def main():
     player_entry_map = build_player_entry_map(players, all_entries)
     print()
 
+    # Collect raw entries for tiers that need full entry lists
+    raw_full = [
+        e for e in all_entries
+        if "Challenger" in e.get("tier", "") or "125" in e.get("tier", "")
+    ]
+    print(f"Full entry list records (Challenger + WTA 125): {len(raw_full)}")
+    print()
+
     # Step 4: Generate output
     print("--- STEP 4: Generating Output ---")
     csv_path = write_csv(players, player_entry_map, args.output)
-    site_path = write_site_data(players, player_entry_map)
+    site_path = write_site_data(players, player_entry_map, raw_full)
 
     print()
     print("=" * 60)
