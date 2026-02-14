@@ -78,6 +78,17 @@ def write_site_data(
 
             dedup_key = (tourn_name, section, week_val)
             if dedup_key in seen:
+                # If duplicate, prefer OfficialDraw source (has reason)
+                if entry.get("source") == "OfficialDraw" and entry.get("reason"):
+                    # Replace existing entry with OfficialDraw version
+                    for idx_d, existing in enumerate(deduped):
+                        if (existing["tournament"] == tourn_name
+                                and existing["section"] == section
+                                and existing["week"] == week_val):
+                            deduped[idx_d]["source"] = "OfficialDraw"
+                            deduped[idx_d]["reason"] = entry.get("reason", "")
+                            deduped[idx_d]["withdrawn"] = True
+                            break
                 continue
             seen.add(dedup_key)
 
@@ -92,11 +103,14 @@ def write_site_data(
                 "source": entry.get("source", ""),
                 "withdrawn": bool(entry.get("withdrawn")),
             }
+            reason = entry.get("reason", "")
+            if reason:
+                entry_data["reason"] = reason
             deduped.append(entry_data)
 
             # Build tournament index
             t_key = tourn_name.lower()
-            tournament_players[t_key].append({
+            tp_entry = {
                 "player": player["name"],
                 "rank": player.get("rank", 9999),
                 "country": player.get("country_code", ""),
@@ -104,7 +118,10 @@ def write_site_data(
                 "section": section,
                 "source": entry.get("source", ""),
                 "withdrawn": bool(entry.get("withdrawn")),
-            })
+            }
+            if reason:
+                tp_entry["reason"] = reason
+            tournament_players[t_key].append(tp_entry)
 
         deduped.sort(key=lambda e: _week_sort_key(e["week"]))
 

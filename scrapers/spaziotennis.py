@@ -467,6 +467,45 @@ def _parse_tournament_page(html: str, tournament_info: dict) -> list[dict]:
                     "source": "SpazioTennis",
                 })
 
+    return _fix_cross_section_withdrawals(entries)
+
+
+def _fix_cross_section_withdrawals(entries: list[dict]) -> list[dict]:
+    """Remove false withdrawals where a player moved to a higher section.
+
+    If a player is OUT in Alternates but appears in Main Draw → not withdrawn
+    (they got promoted because someone else withdrew).
+    """
+    SECTION_RANK = {"Alternates": 0, "Qualifying": 1, "Main Draw": 2}
+
+    # Group by normalized player name
+    by_player = {}
+    for e in entries:
+        key = e["player_name"].lower()
+        by_player.setdefault(key, []).append(e)
+
+    fixed = 0
+    for name, player_entries in by_player.items():
+        # Find highest section where player appears and is NOT withdrawn
+        active_sections = [
+            SECTION_RANK.get(e["section"], -1)
+            for e in player_entries if not e["withdrawn"]
+        ]
+        if not active_sections:
+            continue
+        max_active = max(active_sections)
+
+        # Clear withdrawn flag for entries in lower sections
+        for e in player_entries:
+            if e["withdrawn"]:
+                wd_rank = SECTION_RANK.get(e["section"], -1)
+                if wd_rank < max_active:
+                    e["withdrawn"] = False
+                    fixed += 1
+
+    if fixed:
+        print(f"    ↳ Fixed {fixed} false withdrawal(s) (promoted to higher section)")
+
     return entries
 
 

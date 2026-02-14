@@ -1034,6 +1034,21 @@ main {
     opacity: 0.5;
 }
 
+.wd-reason {
+    font-size: 11px;
+    color: var(--accent-yellow);
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.wd-reason-inline {
+    font-size: 0.85em;
+    color: var(--accent-yellow);
+    opacity: 0.8;
+    font-style: italic;
+    margin-left: 4px;
+}
+
 .wd-source-link {
     font-size: 11px;
     color: var(--accent-blue);

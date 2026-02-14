@@ -95,6 +95,7 @@ function buildTournamentEntries() {
                 section: e.section,
                 source: e.source,
                 withdrawn: e.withdrawn,
+                reason: e.reason || "",
             });
             map[key].sections[e.section] = true;
         }
@@ -279,7 +280,7 @@ function badgeHTML(entry, linkToTournament) {
     var sec = shortSection(entry.section);
     var secHTML = (sec && sec !== "MD") ? '<span class="section-indicator">' + sec + '</span>' : "";
     var wdHTML = entry.withdrawn ? ' <span class="wd-tag">WD</span>' : "";
-    var title = esc(entry.tournament) + " | " + esc(entry.tier) + " | " + esc(entry.section) + (entry.source ? " | " + esc(entry.source) : "");
+    var title = esc(entry.tournament) + " | " + esc(entry.tier) + " | " + esc(entry.section) + (entry.source ? " | " + esc(entry.source) : "") + (entry.withdrawn && entry.reason ? " | " + esc(entry.reason) : "");
 
     if (linkToTournament) {
         return '<a href="#/tournament/' + encName(entry.tournament) + '" class="tournament-badge ' + cls + wdCls + '" title="' + title + '">' +
@@ -682,7 +683,10 @@ function renderTournamentDetail(name) {
         } else {
             html += '<td class="player-col">' + esc(e.name);
         }
-        if (e.withdrawn) html += ' <span class="wd-tag">WD</span>';
+        if (e.withdrawn) {
+            html += ' <span class="wd-tag">WD</span>';
+            if (e.reason) html += ' <span class="wd-reason-inline">' + esc(e.reason) + '</span>';
+        }
         html += '</td>';
         html += '<td class="ctry-col">' + esc(e.country) + '</td>';
         html += '<td>' + esc(e.section) + '</td>';
@@ -736,6 +740,7 @@ function renderWithdrawals() {
                 section: e.section,
                 week: e.week,
                 source: e.source,
+                reason: e.reason || "",
             });
         }
     }
@@ -793,6 +798,7 @@ function renderWithdrawals() {
                 var sec = shortSection(w.section);
                 if (sec) html += '<span class="wd-section">' + sec + '</span>';
                 html += '<span class="wd-source">' + esc(w.source) + '</span>';
+                if (w.reason) html += '<span class="wd-reason">' + esc(w.reason) + '</span>';
                 html += '</div>';
                 html += '</div>';
             }

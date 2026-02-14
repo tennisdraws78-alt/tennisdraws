@@ -20,6 +20,10 @@ WTA_API_URL = "https://api.wtatennis.com/tennis/tournaments/"
 WTA_PLAYER_LIST_URL = "https://www.wtatennis.com/tournaments/{id}/{slug}/{year}/player-list"
 WTA125_TOMIST_URL = "https://tomistgg.github.io/tenis-fem-arg/"
 
+# Draw PDF URLs (official draw sheets with withdrawal sections)
+ATP_DRAW_PDF_URL = "https://www.protennislive.com/posting/{year}/{tournament_id}/mds.pdf"
+WTA_DRAW_PDF_URL = "https://wtafiles.wtatennis.com/pdf/draws/{year}/{tournament_id}/MDS.pdf"
+
 # Scraping settings
 REQUEST_DELAY = 1.5  # seconds between requests
 MAX_RETRIES = 3

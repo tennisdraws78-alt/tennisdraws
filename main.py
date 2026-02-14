@@ -31,9 +31,139 @@ from scrapers.spaziotennis import scrape_all as scrape_spazio
 from scrapers.wta_official import scrape_all as scrape_wta
 from scrapers.itf_entries import scrape_all as scrape_itf
 from scrapers.wta125_tomist import scrape_all as scrape_wta125
+from scrapers.draw_pdfs import scrape_all as scrape_draws
 from matching.name_matcher import build_player_entry_map
 from output.csv_writer import write_csv
 from output.site_writer import write_site_data
+
+
+def _attach_draw_reasons(all_entries: list[dict]) -> None:
+    """Attach withdrawal reasons from OfficialDraw entries to existing withdrawals,
+    and expand abbreviated OfficialDraw names to full names for matching.
+
+    OfficialDraw PDFs use abbreviated names ("A. Vukic") while Spazio/TickTock
+    have full names ("Aleksandar Vukic").
+
+    Strategy:
+    1. Build a lookup from abbreviated names to reasons (from OfficialDraw)
+    2. For each non-OfficialDraw withdrawal, attach reason if found
+    3. For remaining OfficialDraw entries, try to expand the abbreviated name
+       to a full name by looking up initial+surname in ALL entries (including
+       non-withdrawn ones — the player may appear in other tournaments)
+    4. Keep expanded-name OfficialDraw entries; remove unexpandable ones
+    """
+    import re
+
+    # Separate OfficialDraw entries from others
+    draw_entries = [e for e in all_entries if e.get("source") == "OfficialDraw"]
+    if not draw_entries:
+        return
+
+    # Build lookup: (initial, surname_lower, gender) -> list of draw entries
+    draw_by_key = {}
+    for de in draw_entries:
+        name = de.get("player_name", "")
+        gender = de.get("gender", "")
+        m = re.match(r"([A-Z][a-z]{0,3})\.\s+(.+)", name)
+        if not m:
+            continue
+        initial = m.group(1)[0].upper()
+        surname = m.group(2).strip().lower()
+        key = (initial, surname, gender)
+        draw_by_key.setdefault(key, []).append(de)
+
+    # Build reverse lookup: (initial, surname, gender) -> full name
+    # from all non-OfficialDraw entries
+    full_name_lookup = {}
+    for entry in all_entries:
+        if entry.get("source") == "OfficialDraw":
+            continue
+        full_name = entry.get("player_name", "")
+        gender = entry.get("gender", "")
+        if not full_name:
+            continue
+        parts = full_name.strip().split()
+        if len(parts) < 2:
+            continue
+        initial = parts[0][0].upper()
+        surname = " ".join(parts[1:]).lower()
+        surname_last = parts[-1].lower()
+        key = (initial, surname, gender)
+        key_last = (initial, surname_last, gender)
+        if key not in full_name_lookup:
+            full_name_lookup[key] = full_name
+        if key_last not in full_name_lookup:
+            full_name_lookup[key_last] = full_name
+
+    # Step 1: Attach reasons to existing withdrawn entries from other sources
+    matched_reasons = 0
+    matched_keys = set()
+    for entry in all_entries:
+        if entry.get("source") == "OfficialDraw":
+            continue
+        if not entry.get("withdrawn"):
+            continue
+
+        full_name = entry.get("player_name", "")
+        gender = entry.get("gender", "")
+        parts = full_name.strip().split()
+        if len(parts) < 2:
+            continue
+
+        initial = parts[0][0].upper()
+        surname = " ".join(parts[1:]).lower()
+        surname_last = parts[-1].lower()
+        key = (initial, surname, gender)
+        key_last = (initial, surname_last, gender)
+
+        # Find matching draw entry with a reason
+        for k in (key, key_last):
+            if k in draw_by_key:
+                for de in draw_by_key[k]:
+                    reason = de.get("reason", "")
+                    if reason and not entry.get("reason"):
+                        entry["reason"] = reason
+                        matched_reasons += 1
+                        matched_keys.add(k)
+                        break
+
+    # Step 2: Expand abbreviated names for unmatched OfficialDraw entries
+    expanded = 0
+    for key, draw_list in draw_by_key.items():
+        for de in draw_list:
+            full = full_name_lookup.get(key)
+            if not full:
+                # Try with just last word of surname
+                surname_parts = key[1].split()
+                if len(surname_parts) > 1:
+                    alt_key = (key[0], surname_parts[-1], key[2])
+                    full = full_name_lookup.get(alt_key)
+            if full:
+                de["player_name"] = full
+                expanded += 1
+
+    # Remove OfficialDraw entries that couldn't be expanded (can't match to players)
+    unexpanded = [
+        e for e in draw_entries
+        if not re.match(r"[A-Z][a-z]{0,3}\.", e.get("player_name", ""))
+        is None
+    ]
+    kept = [
+        e for e in draw_entries
+        if re.match(r"[A-Z][a-z]{0,3}\.", e.get("player_name", ""))
+        is None
+    ]
+    removed = len(draw_entries) - len(kept)
+    all_entries[:] = [e for e in all_entries if e.get("source") != "OfficialDraw"] + kept
+
+    if matched_reasons:
+        print(f"  Attached {matched_reasons} withdrawal reason(s) from official draw PDFs")
+    if expanded:
+        print(f"  Expanded {expanded} abbreviated names to full names")
+    if kept:
+        print(f"  Kept {len(kept)} OfficialDraw withdrawal entries (name expanded)")
+    if removed:
+        print(f"  Removed {removed} OfficialDraw entries (couldn't expand name)")
 
 
 def main():
@@ -71,6 +201,11 @@ def main():
         "--skip-wta125",
         action="store_true",
         help="Skip WTA 125 TomistGG scraping",
+    )
+    parser.add_argument(
+        "--skip-draws",
+        action="store_true",
+        help="Skip official draw PDF scraping (ATP + WTA)",
     )
     parser.add_argument(
         "--limit-itf",
@@ -146,7 +281,17 @@ def main():
         print("Skipping WTA 125 TomistGG (--skip-wta125)")
         print()
 
-    # Source 5: ITF Entries (requires Playwright)
+    # Source 5: Official Draw PDFs (ATP + WTA withdrawals with reasons)
+    if not args.skip_draws:
+        time.sleep(1)
+        draw_entries = scrape_draws()
+        all_entries.extend(draw_entries)
+        print()
+    else:
+        print("Skipping Official Draw PDFs (--skip-draws)")
+        print()
+
+    # Source 6: ITF Entries (requires Playwright)
     if not args.skip_itf:
         time.sleep(1)
         itf_entries = scrape_itf(limit=args.limit_itf)
@@ -155,6 +300,12 @@ def main():
     else:
         print("Skipping ITF Entries (--skip-itf)")
         print()
+
+    # Attach OfficialDraw withdrawal reasons to entries from other sources.
+    # Draw PDFs use abbreviated names ("A. Vukic") that can't fuzzy-match to
+    # full player names, but other scrapers have the full names.  We match
+    # them by initial + surname and merge the "reason" field.
+    _attach_draw_reasons(all_entries)
 
     # Filter entries by gender
     if args.gender == "men":
