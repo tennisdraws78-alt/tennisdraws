@@ -4,6 +4,39 @@
 
 var D = window.TENNIS_DATA || { players: [], weeks: [], tournaments: [], stats: {} };
 
+// Filter out past weeks — only keep from the current week onward
+// (plus the most recent past week if it has entries from this week's tournaments)
+(function filterPastWeeks() {
+    var now = new Date();
+    var MONTH_MAP = {
+        "Jan": 0, "Feb": 1, "Mar": 2, "Apr": 3, "May": 4, "Jun": 5,
+        "Jul": 6, "Aug": 7, "Sep": 8, "Oct": 9, "Nov": 10, "Dec": 11
+    };
+
+    function parseWeek(w) {
+        var parts = w.split(" ");
+        if (parts.length < 2) return null;
+        var mon = MONTH_MAP[parts[0]];
+        if (mon === undefined) return null;
+        var day = parseInt(parts[1], 10);
+        if (isNaN(day)) return null;
+        return new Date(now.getFullYear(), mon, day);
+    }
+
+    // Find the cutoff: keep weeks whose start date is within 10 days before today
+    // (i.e. the current week's tournament may have started a few days ago)
+    var cutoff = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+
+    var filtered = [];
+    for (var i = 0; i < D.weeks.length; i++) {
+        var dt = parseWeek(D.weeks[i]);
+        if (!dt || dt >= cutoff) {
+            filtered.push(D.weeks[i]);
+        }
+    }
+    D.weeks = filtered;
+})();
+
 // === STATE ===
 var state = {
     gender: "all",
