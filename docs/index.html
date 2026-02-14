@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000000">
+<title>TennisDraws — Tennis Entry Lists</title>
+<meta name="description" content="Track 3000+ tennis player entry lists across 120+ ATP & WTA tournaments, updated daily.">
+<meta property="og:title" content="TennisDraws">
+<meta property="og:description" content="Track 3000+ tennis player entry lists across 120+ tournaments, updated daily">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="TennisDraws">
+<meta name="twitter:description" content="Track 3000+ tennis player entry lists across 120+ tournaments, updated daily">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%234da6ff'/%3E%3Cstop offset='100%25' stop-color='%2336d399'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M6 26 Q6 6 26 6' stroke='url(%23g)' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M10 22 Q14 14 22 10' stroke='url(%23g)' stroke-width='2' fill='none' stroke-linecap='round' opacity='0.5'/%3E%3Ccircle cx='26' cy='6' r='3' fill='%234da6ff'/%3E%3Ccircle cx='6' cy='26' r='2' fill='%2336d399' opacity='0.6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <div class="header-top">
+        <a href="#/" class="logo">
+            <svg class="brand-mark" viewBox="0 0 32 32" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+                <defs><linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4da6ff"/><stop offset="100%" stop-color="#36d399"/></linearGradient></defs>
+                <path d="M6 26 Q6 6 26 6" stroke="url(#brandGrad)" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M10 22 Q14 14 22 10" stroke="url(#brandGrad)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+                <circle cx="26" cy="6" r="3" fill="#4da6ff"/>
+                <circle cx="6" cy="26" r="2" fill="#36d399" opacity="0.6"/>
+            </svg>
+            <span class="brand-text">Tennis<span class="brand-accent">Draws</span></span>
+        </a>
+        <nav class="nav-links">
+            <a href="#/" class="nav-link active" data-nav="dashboard">Dashboard</a>
+            <a href="#/tournaments" class="nav-link" data-nav="tournaments">Tournaments</a>
+            <a href="#/withdrawals" class="nav-link" data-nav="withdrawals">Withdrawals</a>
+        </nav>
+        <a href="https://x.com/tennisdraws" target="_blank" rel="noopener" class="twitter-btn">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Follow @tennisdraws
+        </a>
+        <div class="stats-bar">
+            <div class="stat-pill"><strong id="statPlayers">-</strong> Players</div>
+            <div class="stat-pill"><strong id="statMatched">-</strong> With Entries</div>
+            <div class="stat-pill"><strong id="statEntries">-</strong> Entries</div>
+            <div class="stat-pill"><strong id="statTournaments">-</strong> Tournaments</div>
+        </div>
+    </div>
+    <div class="controls" id="controls">
+        <div class="search-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+            <input type="text" id="searchInput" placeholder="Search player or tournament..." autocomplete="off">
+        </div>
+        <div class="filter-group gender-tabs">
+            <button class="active" data-gender="all">All</button>
+            <button data-gender="Men">ATP</button>
+            <button data-gender="Women">WTA</button>
+        </div>
+        <label class="toggle-label">
+            <input type="checkbox" id="entriesOnly">
+            <span class="toggle-switch"></span>
+            With entries only
+        </label>
+        <div class="filter-group rank-filter">
+            <label class="rank-label">Rank</label>
+            <input type="number" id="rankMin" min="1" max="1500" placeholder="1" class="rank-input">
+            <span class="rank-sep">&ndash;</span>
+            <input type="number" id="rankMax" min="1" max="1500" placeholder="1500" class="rank-input">
+        </div>
+    </div>
+</header>
+
+<main>
+    <div id="resultsCount"></div>
+    <div id="app"></div>
+</main>
+
+<footer>
+    <span class="footer-brand">TennisDraws</span>
+    <span class="sep">&middot;</span>
+    <span>Real-time tennis entry list tracker</span>
+    <span class="sep">&middot;</span>
+    <span>Data: TickTock Tennis, Spazio Tennis, WTA Official, ITF</span>
+    <span class="sep">&middot;</span>
+    <span id="lastUpdated"></span>
+</footer>
+
+<!-- Follow gate overlay -->
+<div id="followGate" class="follow-gate">
+    <div class="follow-gate-card">
+        <div class="follow-gate-icon">
+            <svg viewBox="0 0 32 32" width="48" height="48" xmlns="http://www.w3.org/2000/svg">
+                <defs><linearGradient id="gateGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4da6ff"/><stop offset="100%" stop-color="#36d399"/></linearGradient></defs>
+                <path d="M6 26 Q6 6 26 6" stroke="url(#gateGrad)" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M10 22 Q14 14 22 10" stroke="url(#gateGrad)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+                <circle cx="26" cy="6" r="3" fill="#4da6ff"/>
+                <circle cx="6" cy="26" r="2" fill="#36d399" opacity="0.6"/>
+            </svg>
+        </div>
+        <h2 class="follow-gate-title">Welcome to TennisDraws</h2>
+        <p class="follow-gate-text">Follow @tennisdraws on X to get free access to entry lists for 3000+ players across 120+ tournaments, updated daily.</p>
+        <a href="https://x.com/tennisdraws" target="_blank" rel="noopener" class="follow-gate-btn" id="followBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Follow @tennisdraws
+        </a>
+        <button class="follow-gate-confirm" id="followConfirm" style="display:none">I've followed &mdash; Let me in</button>
+    </div>
+</div>
+
+<script>
+(function() {
+    var gate = document.getElementById("followGate");
+    var followBtn = document.getElementById("followBtn");
+    var confirmBtn = document.getElementById("followConfirm");
+
+    // Check if already dismissed
+    try {
+        if (localStorage.getItem("tennis_followed") === "1") {
+            gate.style.display = "none";
+            return;
+        }
+    } catch(e) {}
+
+    // Show confirm button after they click follow
+    followBtn.addEventListener("click", function() {
+        setTimeout(function() {
+            confirmBtn.style.display = "";
+        }, 1500);
+    });
+
+    // Dismiss gate
+    confirmBtn.addEventListener("click", function() {
+        gate.style.display = "none";
+        try { localStorage.setItem("tennis_followed", "1"); } catch(e) {}
+    });
+})();
+</script>
+
+<script src="data.js"></script>
+<script src="app.js" defer></script>
+
+</body>
+</html>

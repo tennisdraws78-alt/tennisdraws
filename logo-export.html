@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head><title>TennisDraws Logo Export</title></head>
+<body style="background:#222;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;font-family:sans-serif;color:#fff">
+<h2>TennisDraws Logo Export</h2>
+<p style="color:#999">Right-click any image below and "Save Image As..." to download</p>
+
+<div style="display:flex;gap:40px;flex-wrap:wrap;justify-content:center">
+  <!-- Logo icon only -->
+  <div style="text-align:center">
+    <canvas id="icon" width="512" height="512" style="border-radius:16px;width:200px;height:200px"></canvas>
+    <p style="color:#aaa;font-size:13px">Icon only (512x512)</p>
+  </div>
+
+  <!-- Twitter profile pic (round) -->
+  <div style="text-align:center">
+    <canvas id="profile" width="400" height="400" style="border-radius:50%;width:200px;height:200px"></canvas>
+    <p style="color:#aaa;font-size:13px">Profile pic (400x400)</p>
+  </div>
+
+  <!-- Twitter banner -->
+  <div style="text-align:center">
+    <canvas id="banner" width="1500" height="500" style="border-radius:8px;width:450px;height:150px"></canvas>
+    <p style="color:#aaa;font-size:13px">X/Twitter banner (1500x500)</p>
+  </div>
+</div>
+
+<div style="display:flex;gap:12px;margin-top:20px">
+  <button onclick="download('icon','tennisdraws-icon.png')" style="padding:10px 24px;background:#00e68a;color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px">Download Icon PNG</button>
+  <button onclick="download('profile','tennisdraws-profile.png')" style="padding:10px 24px;background:#00e68a;color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px">Download Profile PNG</button>
+  <button onclick="download('banner','tennisdraws-banner.png')" style="padding:10px 24px;background:#00e68a;color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px">Download Banner PNG</button>
+</div>
+
+<script>
+function drawLogo(ctx, size) {
+    var s = size / 512;
+
+    // Gradient
+    var grad = ctx.createLinearGradient(0, 0, size, size);
+    grad.addColorStop(0, '#4da6ff');
+    grad.addColorStop(1, '#36d399');
+
+    // Outer arc
+    ctx.beginPath();
+    ctx.moveTo(96*s, 416*s);
+    ctx.quadraticCurveTo(96*s, 96*s, 416*s, 96*s);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 28*s;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Inner arc
+    ctx.beginPath();
+    ctx.moveTo(160*s, 352*s);
+    ctx.quadraticCurveTo(224*s, 224*s, 352*s, 160*s);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 18*s;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.4;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Top-right node
+    ctx.beginPath();
+    ctx.arc(416*s, 96*s, 36*s, 0, Math.PI*2);
+    ctx.fillStyle = '#4da6ff';
+    ctx.fill();
+
+    // Bottom-left node
+    ctx.beginPath();
+    ctx.arc(96*s, 416*s, 24*s, 0, Math.PI*2);
+    ctx.fillStyle = '#36d399';
+    ctx.globalAlpha = 0.6;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+}
+
+// Icon (512x512)
+(function() {
+    var c = document.getElementById('icon');
+    var ctx = c.getContext('2d');
+    // Background
+    ctx.fillStyle = '#000000';
+    roundRect(ctx, 0, 0, 512, 512, 80);
+    ctx.fill();
+    drawLogo(ctx, 512);
+})();
+
+// Profile pic (400x400, circular content)
+(function() {
+    var c = document.getElementById('profile');
+    var ctx = c.getContext('2d');
+    // Background
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(200, 200, 200, 0, Math.PI*2);
+    ctx.fill();
+    // Draw logo centered, slightly smaller
+    ctx.save();
+    ctx.translate(44, 44);
+    drawLogo(ctx, 312);
+    ctx.restore();
+})();
+
+// Banner (1500x500)
+(function() {
+    var c = document.getElementById('banner');
+    var ctx = c.getContext('2d');
+    var W = 1500, H = 500;
+
+    // === BACKGROUND ===
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle radial glow behind center
+    var radGlow = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 500);
+    radGlow.addColorStop(0, 'rgba(0,230,138,0.06)');
+    radGlow.addColorStop(1, 'rgba(10,25,20,0)');
+    ctx.fillStyle = radGlow;
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle grid/data lines in background
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (var gx = 0; gx < W; gx += 60) {
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+    }
+    for (var gy = 0; gy < H; gy += 60) {
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+
+    // === LOGO (centered, above text) ===
+    ctx.save();
+    ctx.translate(W/2 - 60, 30);
+    drawLogo(ctx, 120);
+    ctx.restore();
+
+    // === BRAND NAME (centered) ===
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#8899aa';
+    ctx.font = '600 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    var tennisW = ctx.measureText('Tennis').width;
+    ctx.font = '800 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    var drawsW = ctx.measureText('Draws').width;
+    var totalW = tennisW + drawsW + 8;
+    var startX = W/2 - totalW/2;
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#8899aa';
+    ctx.font = '600 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText('Tennis', startX, 210);
+    ctx.fillStyle = '#00e68a';
+    ctx.font = '800 64px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText('Draws', startX + tennisW + 8, 210);
+
+    // === TAGLINE ===
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#5a6d7f';
+    ctx.font = '400 24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText('Real-time tennis entry lists \u2022 Updated daily', W/2, 250);
+
+    // === GRADIENT DIVIDER LINE ===
+    var lineGrad = ctx.createLinearGradient(W/2 - 250, 0, W/2 + 250, 0);
+    lineGrad.addColorStop(0, 'rgba(0,230,138,0)');
+    lineGrad.addColorStop(0.3, 'rgba(0,230,138,0.5)');
+    lineGrad.addColorStop(0.7, 'rgba(54,211,153,0.5)');
+    lineGrad.addColorStop(1, 'rgba(54,211,153,0)');
+    ctx.strokeStyle = lineGrad;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(W/2 - 250, 275);
+    ctx.lineTo(W/2 + 250, 275);
+    ctx.stroke();
+
+    // === ATP & WTA PILLS + STATS ===
+    var pillY = 310;
+    var pillH = 42;
+    var pillR = 21;
+    var gap = 24;
+
+    // ATP pill
+    var atpText = 'ATP';
+    ctx.font = '800 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    var atpW = ctx.measureText(atpText).width + 32;
+
+    // WTA pill
+    var wtaText = 'WTA';
+    var wtaW = ctx.measureText(wtaText).width + 32;
+
+    // Stat pills
+    ctx.font = '700 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    var stat1 = '3,000+ Players';
+    var stat1W = ctx.measureText(stat1).width + 32;
+    var stat2 = '120+ Tournaments';
+    var stat2W = ctx.measureText(stat2).width + 32;
+    var stat3 = 'Daily Updates';
+    var stat3W = ctx.measureText(stat3).width + 32;
+
+    var totalPillsW = atpW + wtaW + stat1W + stat2W + stat3W + gap*4;
+    var pillStartX = W/2 - totalPillsW/2;
+
+    // Draw ATP pill (blue filled)
+    ctx.fillStyle = 'rgba(77,166,255,0.15)';
+    roundRect(ctx, pillStartX, pillY, atpW, pillH, pillR);
+    ctx.fill();
+    ctx.strokeStyle = '#4da6ff';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, pillStartX, pillY, atpW, pillH, pillR);
+    ctx.stroke();
+    ctx.fillStyle = '#4da6ff';
+    ctx.font = '800 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(atpText, pillStartX + atpW/2, pillY + 27);
+
+    // Draw WTA pill (pink filled)
+    var wtaX = pillStartX + atpW + gap;
+    ctx.fillStyle = 'rgba(255,107,157,0.15)';
+    roundRect(ctx, wtaX, pillY, wtaW, pillH, pillR);
+    ctx.fill();
+    ctx.strokeStyle = '#ff6b9d';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, wtaX, pillY, wtaW, pillH, pillR);
+    ctx.stroke();
+    ctx.fillStyle = '#ff6b9d';
+    ctx.font = '800 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(wtaText, wtaX + wtaW/2, pillY + 27);
+
+    // Stat pills (dark with border)
+    function drawStatPill(x, w, text) {
+        ctx.fillStyle = 'rgba(15,15,15,0.9)';
+        roundRect(ctx, x, pillY, w, pillH, pillR);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = 1;
+        roundRect(ctx, x, pillY, w, pillH, pillR);
+        ctx.stroke();
+        ctx.fillStyle = '#8899aa';
+        ctx.font = '700 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, x + w/2, pillY + 27);
+    }
+
+    var s1X = wtaX + wtaW + gap;
+    drawStatPill(s1X, stat1W, stat1);
+    var s2X = s1X + stat1W + gap;
+    drawStatPill(s2X, stat2W, stat2);
+    var s3X = s2X + stat2W + gap;
+    drawStatPill(s3X, stat3W, stat3);
+
+    // === BOTTOM ACCENT BARS ===
+    // ATP blue bar left
+    var barGrad1 = ctx.createLinearGradient(0, 0, W/2, 0);
+    barGrad1.addColorStop(0, '#4da6ff');
+    barGrad1.addColorStop(1, 'rgba(77,166,255,0)');
+    ctx.fillStyle = barGrad1;
+    ctx.fillRect(0, H - 4, W/2, 4);
+
+    // WTA pink bar right
+    var barGrad2 = ctx.createLinearGradient(W/2, 0, W, 0);
+    barGrad2.addColorStop(0, 'rgba(255,107,157,0)');
+    barGrad2.addColorStop(1, '#ff6b9d');
+    ctx.fillStyle = barGrad2;
+    ctx.fillRect(W/2, H - 4, W/2, 4);
+
+    // === BOTTOM TAGLINE ===
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#3a4f63';
+    ctx.font = '500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText('Know where every player is competing \u2014 before anyone else', W/2, H - 30);
+
+    ctx.textAlign = 'left'; // reset
+})();
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+}
+
+function download(id, filename) {
+    var c = document.getElementById(id);
+    var link = document.createElement('a');
+    link.download = filename;
+    link.href = c.toDataURL('image/png');
+    link.click();
+}
+</script>
+</body>
+</html>

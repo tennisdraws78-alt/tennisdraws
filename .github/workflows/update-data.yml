@@ -1,0 +1,36 @@
+name: Update Tennis Data
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6AM UTC
+  workflow_dispatch:       # Allow manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+
+      - name: Run scraper pipeline
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          RAPIDAPI_HOST: ${{ secrets.RAPIDAPI_HOST }}
+        run: python main.py
+
+      - name: Commit and push updated data
+        run: |
+          git config user.name "TennisDraws"
+          git config user.email "tennisdraws78@gmail.com"
+          git add docs/data.js
+          git diff --staged --quiet || git commit -m "Update tennis data $(date -u +%Y-%m-%d)"
+          git push
