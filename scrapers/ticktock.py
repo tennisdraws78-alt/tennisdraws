@@ -132,7 +132,7 @@ def _js_to_json(js_str: str) -> str:
     return result
 
 
-def _parse_tournaments(data: dict, gender: str, week_dates: dict = None, source_url: str = "") -> list[dict]:
+def _parse_tournaments(data: dict, gender: str, week_dates: dict = None) -> list[dict]:
     """Parse the extracted data into a flat list of tournament entries.
 
     Returns list of dicts with keys:
@@ -188,7 +188,6 @@ def _parse_tournaments(data: dict, gender: str, week_dates: dict = None, source_
                             "withdrawn": withdrawn,
                             "gender": gender,
                             "source": "TickTockTennis",
-                            "source_url": source_url,
                         })
 
     return entries
@@ -204,7 +203,7 @@ def scrape_atp() -> list[dict]:
 
     week_dates = _extract_week_dates(html)
     data = _extract_js_data(html, "atpData")
-    entries = _parse_tournaments(data, "M", week_dates, config.TICKTOCK_ATP_URL)
+    entries = _parse_tournaments(data, "M", week_dates)
 
     active = [e for e in entries if not e["withdrawn"]]
     withdrawn = [e for e in entries if e["withdrawn"]]
@@ -222,7 +221,7 @@ def scrape_wta() -> list[dict]:
 
     week_dates = _extract_week_dates(html)
     data = _extract_js_data(html, "wtaData")
-    entries = _parse_tournaments(data, "F", week_dates, config.TICKTOCK_WTA_URL)
+    entries = _parse_tournaments(data, "F", week_dates)
 
     active = [e for e in entries if not e["withdrawn"]]
     withdrawn = [e for e in entries if e["withdrawn"]]

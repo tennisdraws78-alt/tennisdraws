@@ -94,7 +94,6 @@ function buildTournamentEntries() {
                 country: player.country,
                 section: e.section,
                 source: e.source,
-                sourceUrl: e.sourceUrl || "",
                 withdrawn: e.withdrawn,
             });
             map[key].sections[e.section] = true;
@@ -687,11 +686,7 @@ function renderTournamentDetail(name) {
         html += '</td>';
         html += '<td class="ctry-col">' + esc(e.country) + '</td>';
         html += '<td>' + esc(e.section) + '</td>';
-        if (e.sourceUrl) {
-            html += '<td class="source-col"><a href="' + esc(e.sourceUrl) + '" target="_blank" rel="noopener" class="source-link">' + esc(e.source) + ' <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg></a></td>';
-        } else {
-            html += '<td class="source-col">' + esc(e.source) + '</td>';
-        }
+        html += '<td class="source-col">' + esc(e.source) + '</td>';
         html += '</tr>';
     }
 
@@ -741,7 +736,6 @@ function renderWithdrawals() {
                 section: e.section,
                 week: e.week,
                 source: e.source,
-                sourceUrl: e.sourceUrl || "",
             });
         }
     }
@@ -798,14 +792,7 @@ function renderWithdrawals() {
                 html += '<a href="#/tournament/' + encName(w.tournament) + '" class="tournament-badge ' + getBadgeClass(w.tier) + '">' + esc(w.tournament) + '</a>';
                 var sec = shortSection(w.section);
                 if (sec) html += '<span class="wd-section">' + sec + '</span>';
-                if (w.sourceUrl) {
-                    html += '<a href="' + esc(w.sourceUrl) + '" target="_blank" rel="noopener" class="wd-source-link" title="View on ' + esc(w.source) + '">';
-                    html += '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>';
-                    html += ' ' + esc(w.source);
-                    html += '</a>';
-                } else {
-                    html += '<span class="wd-source">' + esc(w.source) + '</span>';
-                }
+                html += '<span class="wd-source">' + esc(w.source) + '</span>';
                 html += '</div>';
                 html += '</div>';
             }

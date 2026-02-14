@@ -84,8 +84,6 @@ def write_site_data(
             if week_val:
                 all_weeks.add(week_val)
 
-            source_url = entry.get("source_url", "")
-
             entry_data = {
                 "tournament": tourn_name,
                 "tier": entry.get("tier", ""),
@@ -94,8 +92,6 @@ def write_site_data(
                 "source": entry.get("source", ""),
                 "withdrawn": bool(entry.get("withdrawn")),
             }
-            if source_url:
-                entry_data["sourceUrl"] = source_url
             deduped.append(entry_data)
 
             # Build tournament index
