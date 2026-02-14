@@ -383,29 +383,6 @@ def _parse_wta_withdrawals(pdf_bytes: bytes) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Date filtering
-# ---------------------------------------------------------------------------
-
-def _is_past_tournament(week_str: str, max_age_days: int = 10) -> bool:
-    """Return True if the tournament week is too far in the past to be relevant.
-
-    week_str is like "Feb 3" or "Jan 19".  We parse it (assuming current year)
-    and check whether the start date is more than max_age_days ago.
-    """
-    if not week_str:
-        return False  # Can't determine — keep it
-
-    try:
-        # Parse "Feb 3" style dates, assume current year
-        dt = datetime.strptime(week_str, "%b %d")
-        dt = dt.replace(year=datetime.now().year)
-        age = (datetime.now() - dt).days
-        return age > max_age_days
-    except ValueError:
-        return False  # Can't parse — keep it
-
-
-# ---------------------------------------------------------------------------
 # Main scrape functions
 # ---------------------------------------------------------------------------
 
@@ -459,11 +436,6 @@ def scrape_atp() -> list[dict]:
             continue
 
         info = _extract_tournament_info(text)
-
-        # Skip tournaments that are too far in the past
-        if _is_past_tournament(info["week"]):
-            continue
-
         withdrawals = _parse_atp_withdrawals(text)
 
         if withdrawals:
@@ -499,11 +471,9 @@ def scrape_wta() -> list[dict]:
 
     tournaments = _discover_wta_tournaments(year)
     # Only process tournaments that are in progress or recently finished
-    # (and not too far in the past)
     active = [
         t for t in tournaments
         if t["status"] in ("inProgress", "past")
-        and not _is_past_tournament(t["week"])
     ]
     print(f"  Found {len(active)} active/recent WTA tournaments with draws")
 
