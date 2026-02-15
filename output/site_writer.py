@@ -107,9 +107,16 @@ def write_site_data(
             if week_val:
                 all_weeks.add(week_val)
 
+            raw_tier = entry.get("tier", "")
+            # Enrich challenger tier with specific category (50/75/100/125/175)
+            if raw_tier.lower() in ("atp challenger", "challenger"):
+                _cc = getattr(config, "CHALLENGER_CATEGORIES", {})
+                cat_lvl = _cc.get(tourn_name)
+                if cat_lvl:
+                    raw_tier = f"ATP Challenger {cat_lvl}"
             entry_data = {
                 "tournament": tourn_name,
-                "tier": entry.get("tier", ""),
+                "tier": raw_tier,
                 "section": section,
                 "week": week_val,
                 "source": entry.get("source", ""),
@@ -197,6 +204,7 @@ def write_site_data(
     _atp_cal = getattr(config, "ATP_CALENDAR", {})
     _wta_cal = getattr(config, "WTA_CALENDAR", {})
     _wta125_cal = getattr(config, "WTA125_CALENDAR", {})
+    _chall_cats = getattr(config, "CHALLENGER_CATEGORIES", {})
 
     def _cal_lookup(name, tier=""):
         """Find calendar metadata, preferring the calendar matching the tier."""
@@ -241,6 +249,11 @@ def write_site_data(
             cal_wk = _cal_week(meta[3])
             if cal_wk:
                 td["week"] = cal_wk
+        # Enrich challenger tier with specific category (50/75/100/125/175)
+        if td["tier"].lower() in ("atp challenger", "challenger"):
+            cat_level = _chall_cats.get(t["name"])
+            if cat_level:
+                td["tier"] = f"ATP Challenger {cat_level}"
         tournaments_data.append(td)
 
     # --- Inject all calendar tournaments that have no scraped entries yet ---
@@ -329,9 +342,15 @@ def write_site_data(
             )
 
             meta = raw_tournament_meta[t_key]
+            # Enrich challenger tier with specific category
+            entry_tier = meta["tier"]
+            if entry_tier.lower() in ("atp challenger", "challenger"):
+                cat_level = _chall_cats.get(meta["name"])
+                if cat_level:
+                    entry_tier = f"ATP Challenger {cat_level}"
             full_entries_data[t_key] = {
                 "name": meta["name"],
-                "tier": meta["tier"],
+                "tier": entry_tier,
                 "week": meta["week"],
                 "source": meta["source"],
                 "gender": meta["gender"],
@@ -343,7 +362,7 @@ def write_site_data(
                 seen_tournaments[t_key] = True
                 new_td = {
                     "name": meta["name"],
-                    "tier": meta["tier"],
+                    "tier": entry_tier,
                     "week": meta["week"],
                     "playerCount": len(deduped_players),
                     "sections": sorted(set(p["s"] for p in deduped_players)),

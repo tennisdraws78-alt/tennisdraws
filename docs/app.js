@@ -583,8 +583,9 @@ function renderTournamentBrowser() {
     var tierOrder = [
         "Grand Slam", "ATP 1000", "WTA 1000", "ATP 500", "WTA 500",
         "ATP 250", "WTA 250", "ATP", "WTA",
-        "ATP Challenger 125", "ATP Challenger 100", "ATP Challenger 75",
-        "ATP Challenger 50", "ATP Challenger", "WTA 125", "ITF"
+        "ATP Challenger 175", "ATP Challenger 125", "ATP Challenger 100",
+        "ATP Challenger 75", "ATP Challenger 50", "ATP Challenger",
+        "WTA 125", "ITF"
     ];
     var tierRank = {};
     for (var oi = 0; oi < tierOrder.length; oi++) tierRank[tierOrder[oi]] = oi;
@@ -661,7 +662,7 @@ function renderTournamentBrowser() {
             var t = group[gi];
             html += '<a href="#/tournament/' + encName(t.name) + '" class="tournament-card">';
             html += '<div class="tournament-card-top">';
-            html += '<span class="tournament-badge ' + getBadgeClass(t.tier) + '" style="cursor:pointer">' + esc(t.tier) + '</span>';
+            html += '<span class="tournament-card-tier">' + esc(t.tier) + '</span>';
             if (t.surface) {
                 var sfcCls = "sfc-" + t.surface.toLowerCase();
                 html += '<span class="tournament-card-surface ' + sfcCls + '">' + esc(t.surface) + '</span>';
@@ -757,7 +758,7 @@ function renderTournamentDetail(name) {
         html += '<div class="tournament-location">' + esc(tournMeta.city) + (tournMeta.country ? ', ' + esc(tournMeta.country) : '') + '</div>';
     }
     html += '<div class="tournament-meta">';
-    html += '<span class="tournament-badge ' + getBadgeClass(tourn.tier) + '">' + esc(tourn.tier) + '</span>';
+    html += '<span class="tournament-card-tier">' + esc(tourn.tier) + '</span>';
     if (tournMeta && tournMeta.surface) {
         var sfcCls = "sfc-" + tournMeta.surface.toLowerCase();
         html += '<span class="tournament-card-surface ' + sfcCls + '">' + esc(tournMeta.surface) + '</span>';

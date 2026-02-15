@@ -801,6 +801,13 @@ main {
     margin-bottom: 8px;
 }
 
+.tournament-card-tier {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.3px;
+}
+
 .tournament-card-surface {
     font-size: 10px;
     font-weight: 700;

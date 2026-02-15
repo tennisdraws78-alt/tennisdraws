@@ -191,3 +191,43 @@ WTA125_CALENDAR = {
     "Foggia": ("Foggia", "Italy", "Clay", "1 Jun - 7 Jun", "WTA 125"),
     "Makarska": ("Makarska", "Croatia", "Clay", "1 Jun - 7 Jun", "WTA 125"),
 }
+
+# ── 2026 ATP Challenger Category Levels ──
+# Maps canonical city name → category number (50, 75, 100, 125, 175)
+# Used to upgrade "ATP Challenger" → "ATP Challenger 125" etc.
+CHALLENGER_CATEGORIES = {
+    "Abidjan": 50, "Asuncion": 75, "Baton Rouge": 50, "Bengaluru": 125,
+    "Birmingham": 125, "Bloomfield Hills": 100, "Bordeaux": 175,
+    "Brasilia": 75, "Bratislava": 100, "Braunschweig": 125,
+    "Brazzaville": 50, "Brisbane": 75, "Bucaramanga": 50,
+    "Buenos Aires CH": 50, "Busan": 125, "Campinas": 75,
+    "Canberra": 125, "Cap Cana": 175, "Centurion": 50,
+    "Cervia": 50, "Cesenatico": 50, "Chennai": 50,
+    "Cherbourg": 75, "Chisinau": 100, "Cleveland": 75,
+    "Cordenons": 75, "Cordoba": 50, "Durham": 75,
+    "Francavilla al Mare": 75, "Fujairah": 50, "Glasgow": 50,
+    "Granby": 75, "Gwangju": 75, "Heilbronn": 100,
+    "Hersonissos": 50, "Huy": 50, "Ilkley": 125,
+    "Istanbul": 75, "Itajai": 75, "Kigali": 100,
+    "Koblenz": 50, "Lille": 125, "Lincoln": 75,
+    "Little Rock": 75, "Lyon": 100, "Madrid": 75,
+    "Merida": 75, "Metepec": 75, "Mexico City": 125,
+    "Montemar": 100, "Monza": 125, "Morelia": 125,
+    "Morelos": 75, "Naples": 125, "New Delhi": 75,
+    "Newport": 125, "Nonthaburi": 75, "Nottingham": 125,
+    "Noumea": 75, "Oeiras": 125, "Pau": 125,
+    "Perugia": 125, "Phan Thiet": 50, "Phoenix": 175,
+    "Poznan": 100, "Pozoblanco": 75, "Prague": 75,
+    "Prostejov": 100, "Rome": 75, "Rosario": 125,
+    "Royan": 50, "Santiago": 75, "Santos": 50,
+    "Sao Paulo": 100, "Sarasota": 75, "Savannah": 75,
+    "Segovia": 75, "Shymkent": 50, "Soma Bay": 75,
+    "Split": 50, "Tallahassee": 75, "Targu Mures": 75,
+    "Tenerife": 75, "Thionville": 100, "Tigre": 50,
+    "Trieste": 75, "Tunis": 75, "Tyler": 75,
+    "Valencia": 175, "Vicenza": 75, "Winnipeg": 75,
+    "Wuning": 50, "Wuxi": 100, "Yokkaichi": 50, "Zagreb": 75,
+    # Aliases for common name variations
+    "Bangkok": 50, "Bangkok 2": 75, "Phan Thiet 2": 50,
+    "Cagliari": 175, "Aix-en-Provence": 175,
+}
