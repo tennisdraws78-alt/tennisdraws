@@ -459,4 +459,28 @@ def write_site_data(
     size_kb = os.path.getsize(filepath) / 1024
     print(f"  File size: {size_kb:.0f} KB")
 
+    # --- Write itf_data.js (ITF calendar for separate ITF page) ---
+    _itf_cal = getattr(config, "ITF_CALENDAR", [])
+    if _itf_cal:
+        itf_tournaments = []
+        for entry in _itf_cal:
+            city, surface, dates, tier, gender = entry
+            itf_tournaments.append({
+                "city": city,
+                "surface": surface,
+                "dates": _format_dates(dates),
+                "tier": tier,
+                "gender": "Men" if gender == "M" else "Women",
+                "week": _cal_week(dates),
+            })
+        itf_data = {"itfTournaments": itf_tournaments}
+        itf_path = os.path.join(output_dir, "itf_data.js")
+        itf_json = json.dumps(itf_data, ensure_ascii=False, separators=(",", ":"))
+        with open(itf_path, "w", encoding="utf-8") as f:
+            f.write("window.ITF_DATA=")
+            f.write(itf_json)
+            f.write(";")
+        print(f"\nITF data written to: {itf_path}")
+        print(f"  ITF tournaments: {len(itf_tournaments)}")
+
     return filepath

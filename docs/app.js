@@ -303,6 +303,13 @@ function route() {
         var wdNav = document.querySelector('[data-nav="withdrawals"]');
         if (wdNav) wdNav.classList.add("active");
         renderWithdrawals();
+    } else if (hash === "#/itf") {
+        state.currentView = "itf";
+        controls.classList.add("hidden");
+        resultsCount.style.display = "none";
+        var itfNav = document.querySelector('[data-nav="itf"]');
+        if (itfNav) itfNav.classList.add("active");
+        renderITFBrowser();
     } else if (hash.indexOf("#/tournament/") === 0) {
         var tournName = decName(hash.substring(13));
         state.currentView = "tournament";
@@ -585,7 +592,7 @@ function renderTournamentBrowser() {
         "ATP 250", "WTA 250", "ATP", "WTA",
         "ATP Challenger 175", "ATP Challenger 125", "ATP Challenger 100",
         "ATP Challenger 75", "ATP Challenger 50", "ATP Challenger",
-        "WTA 125", "ITF"
+        "WTA 125"
     ];
     var tierRank = {};
     for (var oi = 0; oi < tierOrder.length; oi++) tierRank[tierOrder[oi]] = oi;
@@ -595,10 +602,11 @@ function renderTournamentBrowser() {
         return ra - rb;
     });
 
-    // Filter tournaments
+    // Filter tournaments (ITF tournaments are on a separate page)
     var filtered = [];
     for (var i = 0; i < tournList.length; i++) {
         var t = tournList[i];
+        if (t.tier === "ITF") continue;
         if (state.tournamentTierFilter === "challenger-125") {
             // Special filter: show only Challenger + WTA 125
             var tl = (t.tier || "").toLowerCase();
@@ -699,6 +707,137 @@ function renderTournamentBrowser() {
         tierBtns[i].addEventListener("click", function () {
             state.tournamentTierFilter = this.getAttribute("data-tier");
             renderTournamentBrowser();
+        });
+    }
+
+    window.scrollTo(0, 0);
+}
+
+// === ITF BROWSER VIEW ===
+function renderITFBrowser() {
+    var container = document.getElementById("app");
+    var itfData = (window.ITF_DATA && window.ITF_DATA.itfTournaments) || [];
+
+    if (!itfData.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">🎾</div><div class="empty-title">No ITF calendar data</div></div>';
+        return;
+    }
+
+    // State for gender and tier filter
+    if (!state.itfGender) state.itfGender = "all";
+    if (!state.itfTierFilter) state.itfTierFilter = "all";
+
+    // Filter by gender
+    var filtered = [];
+    for (var i = 0; i < itfData.length; i++) {
+        var t = itfData[i];
+        if (state.itfGender !== "all" && t.gender !== state.itfGender) continue;
+        if (state.itfTierFilter !== "all" && t.tier !== state.itfTierFilter) continue;
+        filtered.push(t);
+    }
+
+    // Collect unique tiers for filter buttons
+    var allTiers = {};
+    for (var i = 0; i < itfData.length; i++) {
+        var t = itfData[i];
+        if (state.itfGender !== "all" && t.gender !== state.itfGender) continue;
+        if (t.tier) allTiers[t.tier] = true;
+    }
+    var tierOrder = [
+        "ITF M25", "ITF M15",
+        "ITF W100", "ITF W75", "ITF W50", "ITF W35", "ITF W15"
+    ];
+    var tierRank = {};
+    for (var oi = 0; oi < tierOrder.length; oi++) tierRank[tierOrder[oi]] = oi;
+    var tierList = Object.keys(allTiers).sort(function(a, b) {
+        var ra = tierRank[a] !== undefined ? tierRank[a] : 99;
+        var rb = tierRank[b] !== undefined ? tierRank[b] : 99;
+        return ra - rb;
+    });
+
+    var html = '<div class="tournament-browser">';
+    html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><span class="bc-current">ITF Calendar</span></div>';
+    html += '<h2 class="section-title">ITF Calendar (' + filtered.length + ')</h2>';
+
+    // Gender tabs
+    html += '<div class="itf-gender-tabs">';
+    html += '<button class="tier-btn' + (state.itfGender === "all" ? " active" : "") + '" data-itfgender="all">All</button>';
+    html += '<button class="tier-btn' + (state.itfGender === "Men" ? " active" : "") + '" data-itfgender="Men" style="' + (state.itfGender === "Men" ? "border-color:#4da6ff;color:#4da6ff;background:rgba(77,166,255,0.08)" : "") + '">Men\'s ITF</button>';
+    html += '<button class="tier-btn' + (state.itfGender === "Women" ? " active" : "") + '" data-itfgender="Women" style="' + (state.itfGender === "Women" ? "border-color:#ff6b9d;color:#ff6b9d;background:rgba(255,107,157,0.08)" : "") + '">Women\'s ITF</button>';
+    html += '</div>';
+
+    // Tier filter buttons
+    html += '<div class="tier-filters">';
+    html += '<button class="tier-btn' + (state.itfTierFilter === "all" ? " active" : "") + '" data-itftier="all">All Tiers</button>';
+    for (var ti = 0; ti < tierList.length; ti++) {
+        var isActive = state.itfTierFilter === tierList[ti];
+        html += '<button class="tier-btn' + (isActive ? " active" : "") + '" data-itftier="' + esc(tierList[ti]) + '">' + esc(tierList[ti]) + '</button>';
+    }
+    html += '</div>';
+
+    // Group by week
+    var weekGroups = {};
+    var weekOrder = [];
+    for (var i = 0; i < filtered.length; i++) {
+        var wk = filtered[i].week || "TBD";
+        if (!weekGroups[wk]) { weekGroups[wk] = []; weekOrder.push(wk); }
+        weekGroups[wk].push(filtered[i]);
+    }
+
+    // Render week groups
+    for (var wi = 0; wi < weekOrder.length; wi++) {
+        var wk = weekOrder[wi];
+        var tourns = weekGroups[wk];
+        // Use dates from first tournament as group header
+        var weekLabel = tourns[0].dates || wk;
+        html += '<div class="week-group">';
+        html += '<div class="week-header">' + esc(weekLabel) + '</div>';
+        html += '<div class="tournament-grid">';
+        for (var ti = 0; ti < tourns.length; ti++) {
+            var t = tourns[ti];
+            var sfcClass = "sfc-" + (t.surface || "").toLowerCase().replace(/ *\(i\)/, "").replace("carpet", "hard");
+            html += '<div class="tournament-card">';
+            html += '<div class="tournament-card-top">';
+            html += '<span class="tournament-card-tier">' + esc(t.tier) + '</span>';
+            if (t.surface) html += '<span class="tournament-card-surface ' + sfcClass + '">' + esc(t.surface) + '</span>';
+            html += '</div>';
+            html += '<div class="tournament-card-name">' + esc(t.city) + '</div>';
+            html += '<div class="tournament-card-meta">';
+            if (t.dates) html += '<span class="tournament-card-dates">' + esc(t.dates) + '</span>';
+            html += '<span class="tournament-card-players">' + esc(t.gender) + '</span>';
+            html += '</div>';
+            html += '</div>';
+        }
+        html += '</div></div>';
+    }
+
+    if (filtered.length === 0) {
+        html += '<div class="empty-state">' +
+            '<div class="empty-icon">🎾</div>' +
+            '<div class="empty-title">No ITF tournaments found</div>' +
+            '<div class="empty-text">Try selecting a different filter</div>' +
+            '</div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    // Wire up gender filter buttons
+    var genderBtns = container.querySelectorAll("[data-itfgender]");
+    for (var i = 0; i < genderBtns.length; i++) {
+        genderBtns[i].addEventListener("click", function() {
+            state.itfGender = this.getAttribute("data-itfgender");
+            state.itfTierFilter = "all";
+            renderITFBrowser();
+        });
+    }
+
+    // Wire up tier filter buttons
+    var tierBtns = container.querySelectorAll("[data-itftier]");
+    for (var i = 0; i < tierBtns.length; i++) {
+        tierBtns[i].addEventListener("click", function() {
+            state.itfTierFilter = this.getAttribute("data-itftier");
+            renderITFBrowser();
         });
     }
 
