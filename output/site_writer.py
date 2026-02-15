@@ -110,10 +110,10 @@ def write_site_data(
             raw_tier = entry.get("tier", "")
             # Enrich challenger tier with specific category (50/75/100/125/175)
             if raw_tier.lower() in ("atp challenger", "challenger"):
-                _cc = getattr(config, "CHALLENGER_CATEGORIES", {})
-                cat_lvl = _cc.get(tourn_name)
-                if cat_lvl:
-                    raw_tier = f"ATP Challenger {cat_lvl}"
+                _cc = getattr(config, "CHALLENGER_CALENDAR", {})
+                _cc_meta = _cc.get(tourn_name)
+                if _cc_meta and len(_cc_meta) > 4:
+                    raw_tier = _cc_meta[4]
             entry_data = {
                 "tournament": tourn_name,
                 "tier": raw_tier,
@@ -204,11 +204,14 @@ def write_site_data(
     _atp_cal = getattr(config, "ATP_CALENDAR", {})
     _wta_cal = getattr(config, "WTA_CALENDAR", {})
     _wta125_cal = getattr(config, "WTA125_CALENDAR", {})
-    _chall_cats = getattr(config, "CHALLENGER_CATEGORIES", {})
+    _chall_cal = getattr(config, "CHALLENGER_CALENDAR", {})
 
     def _cal_lookup(name, tier=""):
         """Find calendar metadata, preferring the calendar matching the tier."""
         tier_l = tier.lower()
+        if "challenger" in tier_l:
+            if name in _chall_cal:
+                return _chall_cal[name]
         if "wta 125" in tier_l:
             if name in _wta125_cal:
                 return _wta125_cal[name]
@@ -218,7 +221,7 @@ def write_site_data(
         if name in _atp_cal:
             return _atp_cal[name]
         # Fallback: try all calendars
-        return _wta_cal.get(name) or _wta125_cal.get(name)
+        return _chall_cal.get(name) or _wta_cal.get(name) or _wta125_cal.get(name)
 
     def _cal_week(dates_str):
         """Parse '2 Jan - 11 Jan' → 'Jan 2' canonical week format."""
@@ -249,15 +252,16 @@ def write_site_data(
             cal_wk = _cal_week(meta[3])
             if cal_wk:
                 td["week"] = cal_wk
-        # Enrich challenger tier with specific category (50/75/100/125/175)
+        # Fallback: enrich challenger tier if calendar lookup didn't already set it
         if td["tier"].lower() in ("atp challenger", "challenger"):
-            cat_level = _chall_cats.get(t["name"])
-            if cat_level:
-                td["tier"] = f"ATP Challenger {cat_level}"
+            chall_meta = _chall_cal.get(t["name"])
+            if chall_meta and len(chall_meta) > 4:
+                td["tier"] = chall_meta[4]
         tournaments_data.append(td)
 
     # --- Inject all calendar tournaments that have no scraped entries yet ---
     all_cal = {}
+    all_cal.update(_chall_cal)
     all_cal.update(_wta125_cal)
     all_cal.update(_wta_cal)
     all_cal.update(_atp_cal)
@@ -345,9 +349,9 @@ def write_site_data(
             # Enrich challenger tier with specific category
             entry_tier = meta["tier"]
             if entry_tier.lower() in ("atp challenger", "challenger"):
-                cat_level = _chall_cats.get(meta["name"])
-                if cat_level:
-                    entry_tier = f"ATP Challenger {cat_level}"
+                chall_meta = _chall_cal.get(meta["name"])
+                if chall_meta and len(chall_meta) > 4:
+                    entry_tier = chall_meta[4]
             full_entries_data[t_key] = {
                 "name": meta["name"],
                 "tier": entry_tier,
