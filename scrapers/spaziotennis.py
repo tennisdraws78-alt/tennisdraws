@@ -175,9 +175,14 @@ def _parse_player_line(line: str) -> dict:
     if not line or len(line) < 5:
         return None
 
-    # Detect status prefixes
+    # Detect [DEL] marker from <del> tag extraction
     withdrawn = False
     status = ""
+    if line.startswith("[DEL]"):
+        withdrawn = True
+        line = line[5:]
+
+    # Detect status prefixes
     for prefix in ["OUT ", "IN ", "PR ", "LL ", "SE ", "WC "]:
         if line.startswith(prefix):
             status = prefix.strip()
@@ -263,8 +268,13 @@ def _parse_wta_player_line(line: str) -> dict:
     if not line or len(line) < 5:
         return None
 
-    # Detect OUT prefix (WTA format: "OUT ARYNA SABALENKA 1")
+    # Detect [DEL] marker from <del> tag extraction
     withdrawn = False
+    if line.startswith("[DEL]"):
+        withdrawn = True
+        line = line[5:].strip()
+
+    # Detect OUT prefix (WTA format: "OUT ARYNA SABALENKA 1")
     if line.upper().startswith("OUT "):
         withdrawn = True
         line = line[4:].strip()
@@ -370,6 +380,14 @@ def _title_case_name(name: str) -> str:
     return " ".join(result)
 
 
+def _extract_lines_with_del(article) -> list[str]:
+    """Extract text lines, marking <del>/<s>/<strike> content with [DEL] prefix."""
+    for tag in article.find_all(["del", "s", "strike"]):
+        tag.replace_with(f"[DEL]{tag.get_text()}")
+    text = article.get_text(separator="\n")
+    return [l.strip() for l in text.split("\n") if l.strip()]
+
+
 def _parse_tournament_page(html: str, tournament_info: dict) -> list[dict]:
     """Parse a single tournament entry list page into player entries."""
     soup = BeautifulSoup(html, "html.parser")
@@ -384,8 +402,7 @@ def _parse_tournament_page(html: str, tournament_info: dict) -> list[dict]:
     if not article:
         return []
 
-    text = article.get_text(separator="\n")
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    lines = _extract_lines_with_del(article)
 
     entries = []
     current_section = "Main Draw"
