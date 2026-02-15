@@ -892,7 +892,6 @@ function renderWithdrawals() {
                         html += '<a href="#/tournament/' + encName(t.tournament) + '" class="tournament-badge ' + getBadgeClass(t.tier) + '">' + esc(t.tournament) + '</a>';
                         var sec = shortSection(t.section);
                         if (sec) html += '<span class="wd-section">' + sec + '</span>';
-                        html += '<span class="wd-source">' + esc(t.source) + '</span>';
                         if (t.reason) html += '<span class="wd-reason">' + esc(t.reason) + '</span>';
                         html += '</div>';
                     }
