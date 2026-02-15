@@ -78,9 +78,18 @@ def write_site_data(
 
             dedup_key = (tourn_name, section, week_val)
             if dedup_key in seen:
-                # If duplicate, prefer OfficialDraw source (has reason)
+                # Prefer withdrawn status from any source
+                if entry.get("withdrawn"):
+                    for idx_d, existing in enumerate(deduped):
+                        if (existing["tournament"] == tourn_name
+                                and existing["section"] == section
+                                and existing["week"] == week_val):
+                            if not existing.get("withdrawn"):
+                                deduped[idx_d]["withdrawn"] = True
+                                deduped[idx_d]["source"] = entry.get("source", existing["source"])
+                            break
+                # Also allow OfficialDraw to attach reason
                 if entry.get("source") == "OfficialDraw" and entry.get("reason"):
-                    # Replace existing entry with OfficialDraw version
                     for idx_d, existing in enumerate(deduped):
                         if (existing["tournament"] == tourn_name
                                 and existing["section"] == section
