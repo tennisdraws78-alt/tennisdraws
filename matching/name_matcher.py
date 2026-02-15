@@ -130,11 +130,11 @@ def build_player_entry_map(
 
         # First try exact normalized match (fast)
         exact_matches = name_index.get(player_norm, [])
-        # Filter by gender
+        # Filter by gender — skip entries with a known different gender
         gender = player.get("gender", "")
         exact_matches = [
             e for e in exact_matches
-            if not gender or not e.get("gender") or gender == e["gender"]
+            if not (gender and e.get("gender") and gender != e["gender"])
         ]
 
         if exact_matches:

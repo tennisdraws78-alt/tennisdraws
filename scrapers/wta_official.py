@@ -74,7 +74,7 @@ def _fetch_tournament_calendar() -> list[dict]:
         if start_date:
             try:
                 dt = datetime.strptime(start_date, "%Y-%m-%d")
-                week = dt.strftime("%b %-d")  # "Feb 15" (no leading zero)
+                week = f"{dt.strftime('%b')} {dt.day}"  # "Feb 15" (no leading zero)
             except ValueError:
                 week = ""
 
@@ -147,7 +147,7 @@ def _scrape_player_list(tournament: dict) -> list[dict]:
 
         entries.append({
             "player_name": name,
-            "country_code": country,
+            "player_country": country,
             "tournament": tournament["name"],
             "tier": tournament["tier"],
             "section": current_section,

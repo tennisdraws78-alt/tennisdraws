@@ -1077,6 +1077,20 @@ main {
 
 .wd-week-group { margin-bottom: 24px; }
 
+.wd-gender-header {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 6px 0 6px 0;
+    margin-top: 10px;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+}
+
+.wd-gender-header[data-gender="Men"] { color: #4da6ff; }
+.wd-gender-header[data-gender="Women"] { color: var(--accent-pink); }
+
 /* ===== EMPTY STATE ===== */
 .empty-state {
     text-align: center;

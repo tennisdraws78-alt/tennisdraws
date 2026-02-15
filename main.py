@@ -143,15 +143,15 @@ def _attach_draw_reasons(all_entries: list[dict]) -> None:
                 expanded += 1
 
     # Remove OfficialDraw entries that couldn't be expanded (can't match to players)
+    # Entries still starting with "A." pattern are unexpanded abbreviations — remove them.
+    # Entries whose names no longer match the abbreviation pattern were successfully expanded — keep them.
     unexpanded = [
         e for e in draw_entries
-        if not re.match(r"[A-Z][a-z]{0,3}\.", e.get("player_name", ""))
-        is None
+        if re.match(r"[A-Z][a-z]{0,3}\.", e.get("player_name", ""))
     ]
     kept = [
         e for e in draw_entries
-        if re.match(r"[A-Z][a-z]{0,3}\.", e.get("player_name", ""))
-        is None
+        if not re.match(r"[A-Z][a-z]{0,3}\.", e.get("player_name", ""))
     ]
     removed = len(draw_entries) - len(kept)
     all_entries[:] = [e for e in all_entries if e.get("source") != "OfficialDraw"] + kept

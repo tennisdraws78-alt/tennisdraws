@@ -122,7 +122,7 @@ def _discover_wta_tournaments(year: int) -> list[dict]:
         if start_date:
             try:
                 dt = datetime.strptime(start_date, "%Y-%m-%d")
-                week = dt.strftime("%b %-d")
+                week = f"{dt.strftime('%b')} {dt.day}"
             except ValueError:
                 week = ""
 

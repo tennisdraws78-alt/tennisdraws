@@ -274,7 +274,7 @@ def _worker_scrape_batch(tournaments: list[dict], gender: str, worker_id: int) -
                                 pass
 
                         entries = _parse_itf_official_tables(page, t, gender)
-                        ranked = [e for e in entries if e["player_rank"] > 0 and not e["withdrawn"]]
+                        ranked = [e for e in entries if e["player_rank"] > 0]
                         all_entries.extend(ranked)
 
                 except Exception:

@@ -20,7 +20,14 @@ var D = window.TENNIS_DATA || { players: [], weeks: [], tournaments: [], stats: 
         if (mon === undefined) return null;
         var day = parseInt(parts[1], 10);
         if (isNaN(day)) return null;
-        return new Date(now.getFullYear(), mon, day);
+        var year = now.getFullYear();
+        var dt = new Date(year, mon, day);
+        // Handle year boundary: if the date is >6 months in the past,
+        // it likely belongs to next year (e.g. "Jan 5" parsed in Dec)
+        if (now - dt > 180 * 24 * 60 * 60 * 1000) {
+            dt = new Date(year + 1, mon, day);
+        }
+        return dt;
     }
 
     // Find the cutoff: keep weeks whose start date is within 10 days before today
@@ -246,6 +253,12 @@ function route() {
     var controls = document.getElementById("controls");
     var resultsCount = document.getElementById("resultsCount");
 
+    // Clean up scroll handler from dashboard when navigating away
+    if (app._scrollHandler) {
+        window.removeEventListener("scroll", app._scrollHandler);
+        app._scrollHandler = null;
+    }
+
     // Update nav links
     var navLinks = document.querySelectorAll(".nav-link");
     for (var i = 0; i < navLinks.length; i++) {
@@ -343,6 +356,12 @@ function renderDashboard() {
     }
 
     // Virtual scrolling: only render visible rows
+    // Clean up previous scroll handler if any
+    if (container._scrollHandler) {
+        window.removeEventListener("scroll", container._scrollHandler);
+        container._scrollHandler = null;
+    }
+
     var CHUNK = 200;
     var total = filtered.length;
     var rendered = Math.min(CHUNK, total);
@@ -778,8 +797,13 @@ function renderWithdrawals() {
         }
     }
 
-    // Sort by rank (top players first)
-    withdrawals.sort(function (a, b) { return a.playerRank - b.playerRank; });
+    // Sort by gender (Men first), then by rank within each gender
+    withdrawals.sort(function (a, b) {
+        if (a.playerGender !== b.playerGender) {
+            return a.playerGender === "Men" ? -1 : 1;
+        }
+        return a.playerRank - b.playerRank;
+    });
 
     // Gender filter
     var genderFilter = "all";
@@ -801,7 +825,7 @@ function renderWithdrawals() {
         html += '<div class="empty-text">No players have withdrawn from upcoming tournaments yet</div>';
         html += '</div>';
     } else {
-        // Group by week
+        // Group by week, then within each week split by gender
         var weekGroups = {};
         var weekOrder = [];
         for (var i = 0; i < withdrawals.length; i++) {
@@ -816,26 +840,44 @@ function renderWithdrawals() {
             var group = weekGroups[wk];
             html += '<div class="week-group wd-week-group">';
             html += '<div class="week-group-header">' + esc(wk) + '</div>';
-            html += '<div class="wd-feed">';
+
+            // Split into ATP and WTA within each week
+            var menWd = [];
+            var womenWd = [];
             for (var gi = 0; gi < group.length; gi++) {
-                var w = group[gi];
-                var genderCls = w.playerGender === "Men" ? "wd-men" : "wd-women";
-                html += '<div class="wd-feed-card ' + genderCls + '" data-gender="' + esc(w.playerGender) + '">';
-                html += '<div class="wd-player-info">';
-                html += '<span class="wd-rank">#' + w.playerRank + '</span>';
-                html += '<a href="#/player/' + encName(w.playerName) + '" class="wd-player-name">' + esc(w.playerName) + '</a>';
-                html += '<span class="wd-country">' + esc(w.playerCountry) + '</span>';
-                html += '</div>';
-                html += '<div class="wd-tournament-info">';
-                html += '<a href="#/tournament/' + encName(w.tournament) + '" class="tournament-badge ' + getBadgeClass(w.tier) + '">' + esc(w.tournament) + '</a>';
-                var sec = shortSection(w.section);
-                if (sec) html += '<span class="wd-section">' + sec + '</span>';
-                html += '<span class="wd-source">' + esc(w.source) + '</span>';
-                if (w.reason) html += '<span class="wd-reason">' + esc(w.reason) + '</span>';
-                html += '</div>';
+                if (group[gi].playerGender === "Men") menWd.push(group[gi]);
+                else womenWd.push(group[gi]);
+            }
+
+            var genderSections = [];
+            if (menWd.length > 0) genderSections.push({ label: "ATP", items: menWd });
+            if (womenWd.length > 0) genderSections.push({ label: "WTA", items: womenWd });
+
+            for (var gsi = 0; gsi < genderSections.length; gsi++) {
+                var gs = genderSections[gsi];
+                html += '<div class="wd-gender-header" data-gender="' + (gs.label === "ATP" ? "Men" : "Women") + '">' + gs.label + ' (' + gs.items.length + ')</div>';
+                html += '<div class="wd-feed">';
+                for (var gi = 0; gi < gs.items.length; gi++) {
+                    var w = gs.items[gi];
+                    var genderCls = w.playerGender === "Men" ? "wd-men" : "wd-women";
+                    html += '<div class="wd-feed-card ' + genderCls + '" data-gender="' + esc(w.playerGender) + '">';
+                    html += '<div class="wd-player-info">';
+                    html += '<span class="wd-rank">#' + w.playerRank + '</span>';
+                    html += '<a href="#/player/' + encName(w.playerName) + '" class="wd-player-name">' + esc(w.playerName) + '</a>';
+                    html += '<span class="wd-country">' + esc(w.playerCountry) + '</span>';
+                    html += '</div>';
+                    html += '<div class="wd-tournament-info">';
+                    html += '<a href="#/tournament/' + encName(w.tournament) + '" class="tournament-badge ' + getBadgeClass(w.tier) + '">' + esc(w.tournament) + '</a>';
+                    var sec = shortSection(w.section);
+                    if (sec) html += '<span class="wd-section">' + sec + '</span>';
+                    html += '<span class="wd-source">' + esc(w.source) + '</span>';
+                    if (w.reason) html += '<span class="wd-reason">' + esc(w.reason) + '</span>';
+                    html += '</div>';
+                    html += '</div>';
+                }
                 html += '</div>';
             }
-            html += '</div></div>';
+            html += '</div>';
         }
         html += '</div>';
     }
@@ -856,6 +898,15 @@ function renderWithdrawals() {
                     cards[k].style.display = "";
                 } else {
                     cards[k].style.display = "none";
+                }
+            }
+            // Also hide/show gender sub-headers
+            var gHeaders = container.querySelectorAll(".wd-gender-header");
+            for (var k = 0; k < gHeaders.length; k++) {
+                if (g === "all" || gHeaders[k].getAttribute("data-gender") === g) {
+                    gHeaders[k].style.display = "";
+                } else {
+                    gHeaders[k].style.display = "none";
                 }
             }
         });

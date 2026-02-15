@@ -52,10 +52,10 @@ def write_csv(
         gender_label = "Men" if player.get("gender") == "M" else "Women"
 
         if entries:
-            # Deduplicate entries by (tournament, section)
+            # Deduplicate entries by (tournament, section, week)
             seen = set()
             for entry in entries:
-                dedup_key = (entry["tournament"], entry["section"], entry["source"])
+                dedup_key = (entry["tournament"], entry["section"], entry.get("week", ""))
                 if dedup_key in seen:
                     continue
                 seen.add(dedup_key)
