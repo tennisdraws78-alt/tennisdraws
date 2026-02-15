@@ -139,6 +139,28 @@ def write_site_data(
                 tp_entry["withdrawal_type"] = wd_type
             tournament_players[t_key].append(tp_entry)
 
+        # Remove false withdrawals: if a player is withdrawn from a lower
+        # section (e.g. Qualifying) but active in a higher section (e.g. Main
+        # Draw) for the same tournament+week, they were promoted — not withdrawn.
+        SECTION_RANK = {"Alternates": 0, "Qualifying": 1, "Main Draw": 2}
+        active_keys = set()
+        for d in deduped:
+            if not d.get("withdrawn"):
+                active_keys.add((d["tournament"], d["week"], SECTION_RANK.get(d["section"], -1)))
+        before_promo = len(deduped)
+        deduped = [
+            d for d in deduped
+            if not (
+                d.get("withdrawn")
+                and any(
+                    t == d["tournament"] and w == d["week"] and sr > SECTION_RANK.get(d["section"], -1)
+                    for t, w, sr in active_keys
+                )
+            )
+        ]
+        if len(deduped) < before_promo:
+            pass  # silently drop promoted entries
+
         deduped.sort(key=lambda e: _week_sort_key(e["week"]))
 
         players_data.append({
