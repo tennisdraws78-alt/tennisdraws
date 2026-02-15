@@ -660,11 +660,22 @@ function renderTournamentBrowser() {
         for (var gi = 0; gi < group.length; gi++) {
             var t = group[gi];
             html += '<a href="#/tournament/' + encName(t.name) + '" class="tournament-card">';
-            html += '<div class="tournament-card-name">' + esc(t.name) + '</div>';
-            html += '<div class="tournament-card-meta">';
+            html += '<div class="tournament-card-top">';
             html += '<span class="tournament-badge ' + getBadgeClass(t.tier) + '" style="cursor:pointer">' + esc(t.tier) + '</span>';
+            if (t.surface) {
+                var sfcCls = "sfc-" + t.surface.toLowerCase();
+                html += '<span class="tournament-card-surface ' + sfcCls + '">' + esc(t.surface) + '</span>';
+            }
+            html += '</div>';
+            html += '<div class="tournament-card-name">' + esc(t.name) + '</div>';
+            if (t.city) {
+                html += '<div class="tournament-card-location">' + esc(t.city) + (t.country ? ', ' + esc(t.country) : '') + '</div>';
+            }
+            html += '<div class="tournament-card-meta">';
+            if (t.dates) {
+                html += '<span class="tournament-card-dates">' + esc(t.dates) + '</span>';
+            }
             html += '<span class="tournament-card-players">' + t.playerCount + ' players</span>';
-            html += '<span class="tournament-card-week">' + esc(t.week) + '</span>';
             html += '</div></a>';
         }
         html += '</div></div>';
@@ -732,14 +743,31 @@ function renderTournamentDetail(name) {
     var html = '<div class="tournament-detail-view">';
     html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><a href="#/tournaments">Tournaments</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(tourn.name) + '</span></div>';
 
+    // Find calendar metadata from D.tournaments
+    var tournMeta = null;
+    for (var mi = 0; mi < (D.tournaments || []).length; mi++) {
+        if (D.tournaments[mi].name.toLowerCase() === key) { tournMeta = D.tournaments[mi]; break; }
+    }
+
     // Header
     html += '<div class="tournament-header">';
     html += '<div>';
     html += '<div class="tournament-title">' + esc(tourn.name) + '</div>';
+    if (tournMeta && tournMeta.city) {
+        html += '<div class="tournament-location">' + esc(tournMeta.city) + (tournMeta.country ? ', ' + esc(tournMeta.country) : '') + '</div>';
+    }
     html += '<div class="tournament-meta">';
     html += '<span class="tournament-badge ' + getBadgeClass(tourn.tier) + '">' + esc(tourn.tier) + '</span>';
+    if (tournMeta && tournMeta.surface) {
+        var sfcCls = "sfc-" + tournMeta.surface.toLowerCase();
+        html += '<span class="tournament-card-surface ' + sfcCls + '">' + esc(tournMeta.surface) + '</span>';
+    }
     if (tourn.hasFullList) html += '<span class="full-list-badge">Full Entry List</span>';
-    html += '<span class="tournament-week-label">' + esc(tourn.week) + '</span>';
+    if (tournMeta && tournMeta.dates) {
+        html += '<span class="tournament-week-label">' + esc(tournMeta.dates) + '</span>';
+    } else {
+        html += '<span class="tournament-week-label">' + esc(tourn.week) + '</span>';
+    }
     html += '<span class="tournament-player-count">' + activeEntries.length + ' players</span>';
     html += '</div></div></div>';
 

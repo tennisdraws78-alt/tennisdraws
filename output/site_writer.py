@@ -14,6 +14,7 @@ from output.html_writer import (
     _extract_start_date,
     _week_sort_key,
 )
+import config
 
 
 def write_site_data(
@@ -192,15 +193,24 @@ def write_site_data(
             if not entry.get("withdrawn"):
                 seen_tournaments[t_key]["playerCount"] += 1
 
+    cal = getattr(config, "ATP_CALENDAR", {})
     for t_key in sorted(seen_tournaments, key=lambda k: _week_sort_key(seen_tournaments[k]["week"])):
         t = seen_tournaments[t_key]
-        tournaments_data.append({
+        td = {
             "name": t["name"],
             "tier": t["tier"],
             "week": t["week"],
             "playerCount": t["playerCount"],
             "sections": sorted(t["sections"]),
-        })
+        }
+        # Enrich with calendar metadata (surface, dates, city, country)
+        meta = cal.get(t["name"])
+        if meta:
+            td["city"] = meta[0]
+            td["country"] = meta[1]
+            td["surface"] = meta[2]
+            td["dates"] = meta[3]
+        tournaments_data.append(td)
 
     # --- Build full entry lists for Challenger/125 tiers ---
     full_entries_data = {}
@@ -276,14 +286,21 @@ def write_site_data(
             # Also add/update in tournaments_data if not already present
             if t_key not in seen_tournaments:
                 seen_tournaments[t_key] = True
-                tournaments_data.append({
+                new_td = {
                     "name": meta["name"],
                     "tier": meta["tier"],
                     "week": meta["week"],
                     "playerCount": len(deduped_players),
                     "sections": sorted(set(p["s"] for p in deduped_players)),
                     "hasFullList": True,
-                })
+                }
+                cal_meta = cal.get(meta["name"])
+                if cal_meta:
+                    new_td["city"] = cal_meta[0]
+                    new_td["country"] = cal_meta[1]
+                    new_td["surface"] = cal_meta[2]
+                    new_td["dates"] = cal_meta[3]
+                tournaments_data.append(new_td)
             else:
                 # Update player count to reflect full list
                 for td in tournaments_data:
