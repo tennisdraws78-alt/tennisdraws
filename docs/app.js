@@ -691,8 +691,16 @@ function renderTournamentDetail(name) {
         currentSection = "all";
     }
 
-    // Filter entries by section
-    var entries = tourn.entries;
+    // Split entries into active and withdrawn
+    var activeEntries = [];
+    var wdEntries = [];
+    for (var ai = 0; ai < tourn.entries.length; ai++) {
+        if (tourn.entries[ai].withdrawn) wdEntries.push(tourn.entries[ai]);
+        else activeEntries.push(tourn.entries[ai]);
+    }
+
+    // Filter active entries by section
+    var entries = activeEntries;
     if (currentSection !== "all") {
         entries = entries.filter(function (e) { return e.section === currentSection; });
     }
@@ -708,47 +716,40 @@ function renderTournamentDetail(name) {
     html += '<span class="tournament-badge ' + getBadgeClass(tourn.tier) + '">' + esc(tourn.tier) + '</span>';
     if (tourn.hasFullList) html += '<span class="full-list-badge">Full Entry List</span>';
     html += '<span class="tournament-week-label">' + esc(tourn.week) + '</span>';
-    html += '<span class="tournament-player-count">' + tourn.entries.length + ' players</span>';
+    html += '<span class="tournament-player-count">' + activeEntries.length + ' players</span>';
     html += '</div></div></div>';
 
-    // Section tabs
+    // Section tabs (counts based on active entries only)
     if (sections.length > 1) {
         html += '<div class="section-tabs">';
-        html += '<button class="section-tab' + (currentSection === "all" ? " active" : "") + '" data-section="all">All (' + tourn.entries.length + ')</button>';
+        html += '<button class="section-tab' + (currentSection === "all" ? " active" : "") + '" data-section="all">All (' + activeEntries.length + ')</button>';
         for (var si = 0; si < sections.length; si++) {
             var sec = sections[si];
-            var secCount = tourn.entries.filter(function (e) { return e.section === sec; }).length;
+            var secCount = activeEntries.filter(function (e) { return e.section === sec; }).length;
+            if (secCount === 0) continue;
             html += '<button class="section-tab' + (currentSection === sec ? " active" : "") + '" data-section="' + esc(sec) + '">' + esc(sec) + ' (' + secCount + ')</button>';
         }
         html += '</div>';
     }
 
-    // Entry table
+    // Entry table (active players only)
     html += '<table class="entry-table"><thead><tr>';
-    html += '<th>Rank</th><th>Player</th><th>Country</th><th>Section</th><th>Source</th>';
+    html += '<th>Rank</th><th>Player</th><th>Country</th><th>Section</th>';
     html += '</tr></thead><tbody>';
 
     for (var i = 0; i < entries.length; i++) {
         var e = entries[i];
-        var wdClass = e.withdrawn ? " withdrawn-row" : "";
         var isRanked = !!playerIndex[e.name.toLowerCase()];
-        if (!isRanked && tourn.hasFullList) wdClass += " unranked-row";
-        html += '<tr class="' + wdClass.trim() + '">';
+        var rowClass = (!isRanked && tourn.hasFullList) ? "unranked-row" : "";
+        html += '<tr class="' + rowClass + '">';
         html += '<td class="rank-col">' + (e.rank || "—") + '</td>';
         if (isRanked) {
-            html += '<td class="player-col"><a href="#/player/' + encName(e.name) + '">' + esc(e.name) + '</a>';
+            html += '<td class="player-col"><a href="#/player/' + encName(e.name) + '">' + esc(e.name) + '</a></td>';
         } else {
-            html += '<td class="player-col">' + esc(e.name);
+            html += '<td class="player-col">' + esc(e.name) + '</td>';
         }
-        if (e.withdrawn) {
-            var isRet = e.withdrawal_type === "RET";
-            html += isRet ? ' <span class="ret-tag">RET</span>' : ' <span class="wd-tag">WD</span>';
-            if (e.reason) html += ' <span class="wd-reason-inline">' + esc(e.reason) + '</span>';
-        }
-        html += '</td>';
         html += '<td class="ctry-col">' + esc(e.country) + '</td>';
         html += '<td>' + esc(e.section) + '</td>';
-        html += '<td class="source-col">' + esc(e.source) + '</td>';
         html += '</tr>';
     }
 
@@ -760,6 +761,33 @@ function renderTournamentDetail(name) {
             '<div class="empty-title">No entries in this section</div>' +
             '<div class="empty-text">Try selecting a different section filter</div>' +
             '</div>';
+    }
+
+    // Withdrawals section (separate from entry list)
+    if (wdEntries.length > 0) {
+        html += '<div class="section-title" style="margin-top:24px">Withdrawals (' + wdEntries.length + ')</div>';
+        html += '<table class="entry-table"><thead><tr>';
+        html += '<th>Rank</th><th>Player</th><th>Country</th><th>Section</th>';
+        html += '</tr></thead><tbody>';
+        for (var wi = 0; wi < wdEntries.length; wi++) {
+            var w = wdEntries[wi];
+            var isRankedW = !!playerIndex[w.name.toLowerCase()];
+            html += '<tr class="withdrawn-row">';
+            html += '<td class="rank-col">' + (w.rank || "—") + '</td>';
+            if (isRankedW) {
+                html += '<td class="player-col"><a href="#/player/' + encName(w.name) + '">' + esc(w.name) + '</a>';
+            } else {
+                html += '<td class="player-col">' + esc(w.name);
+            }
+            var isRet = w.withdrawal_type === "RET";
+            html += isRet ? ' <span class="ret-tag">RET</span>' : ' <span class="wd-tag">WD</span>';
+            if (w.reason) html += ' <span class="wd-reason-inline">' + esc(w.reason) + '</span>';
+            html += '</td>';
+            html += '<td class="ctry-col">' + esc(w.country) + '</td>';
+            html += '<td>' + esc(w.section) + '</td>';
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
     }
 
     html += '</div>';

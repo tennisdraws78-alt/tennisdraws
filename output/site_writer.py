@@ -189,7 +189,8 @@ def write_site_data(
                     "sections": set(),
                 }
             seen_tournaments[t_key]["sections"].add(entry["section"])
-            seen_tournaments[t_key]["playerCount"] += 1
+            if not entry.get("withdrawn"):
+                seen_tournaments[t_key]["playerCount"] += 1
 
     for t_key in sorted(seen_tournaments, key=lambda k: _week_sort_key(seen_tournaments[k]["week"])):
         t = seen_tournaments[t_key]
