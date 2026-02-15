@@ -263,35 +263,42 @@ def _parse_wta_player_line(line: str) -> dict:
     if not line or len(line) < 5:
         return None
 
-    # Format: SEED_NUM NAME (COUNTRY) RANK_OR_PR
-    # or: SEED_NUM NAME RANK
+    # Detect OUT prefix (WTA format: "OUT ARYNA SABALENKA 1")
+    withdrawn = False
+    if line.upper().startswith("OUT "):
+        withdrawn = True
+        line = line[4:].strip()
+
+    # Format: [SEED_NUM] NAME (COUNTRY) RANK_OR_PR
+    # or: [SEED_NUM] NAME RANK
+    # Seed number is optional — OUT lines don't have one.
     # Try with country in parentheses
     match = re.match(
-        r"^(\d+)\s+(.+?)\s+\(([A-Z]{2,3})\)\s+(?:PR)?(\d+)\s*$",
+        r"^(?:\d+\s+)?(.+?)\s+\(([A-Z]{2,3})\)\s+(?:PR)?(\d+)\s*$",
         line
     )
     if match:
-        name = match.group(2).strip()
-        country = match.group(3)
-        rank = int(match.group(4))
+        name = match.group(1).strip()
+        country = match.group(2)
+        rank = int(match.group(3))
         # Convert ALL CAPS name to Title Case
         name = _title_case_name(name)
         return {
             "player_name": name,
             "player_country": country,
             "player_rank": rank,
-            "withdrawn": False,
-            "status": "",
+            "withdrawn": withdrawn,
+            "status": "OUT" if withdrawn else "",
         }
 
     # Try without country
     match = re.match(
-        r"^(\d+)\s+(.+?)\s+(?:PR)?(\d+)\s*$",
+        r"^(?:\d+\s+)?(.+?)\s+(?:PR)?(\d+)\s*$",
         line
     )
     if match:
-        name = match.group(2).strip()
-        rank = int(match.group(3))
+        name = match.group(1).strip()
+        rank = int(match.group(2))
         # Make sure name is actually text (not just numbers)
         if re.search(r"[A-Za-z]", name):
             name = _title_case_name(name)
@@ -299,8 +306,8 @@ def _parse_wta_player_line(line: str) -> dict:
                 "player_name": name,
                 "player_country": "",
                 "player_rank": rank,
-                "withdrawn": False,
-                "status": "",
+                "withdrawn": withdrawn,
+                "status": "OUT" if withdrawn else "",
             }
 
     return None
