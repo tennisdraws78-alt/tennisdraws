@@ -16,6 +16,31 @@ from output.html_writer import (
 )
 import config
 
+# ── Date formatting ──────────────────────────────────────────────
+_MONTH_FULL = {
+    "Jan": "January", "Feb": "February", "Mar": "March",
+    "Apr": "April",   "May": "May",      "Jun": "June",
+    "Jul": "July",    "Aug": "August",    "Sep": "September",
+    "Oct": "October", "Nov": "November",  "Dec": "December",
+}
+
+
+def _format_dates(dates_str: str, year: int = 2026) -> str:
+    """'5 Jan - 11 Jan' → '5 - 11 January, 2026'
+       '18 Jan - 1 Feb' → '18 January - 1 February, 2026'"""
+    if not dates_str:
+        return dates_str
+    m = re.match(r"(\d{1,2})\s+(\w{3})\s+-\s+(\d{1,2})\s+(\w{3})$", dates_str.strip())
+    if not m:
+        return dates_str
+    d1, m1, d2, m2 = m.groups()
+    f1, f2 = _MONTH_FULL.get(m1), _MONTH_FULL.get(m2)
+    if not f1 or not f2:
+        return dates_str
+    if m1 == m2:
+        return f"{d1} - {d2} {f2}, {year}"
+    return f"{d1} {f1} - {d2} {f2}, {year}"
+
 
 def write_site_data(
     players: list[dict],
@@ -245,7 +270,7 @@ def write_site_data(
             td["city"] = meta[0]
             td["country"] = meta[1]
             td["surface"] = meta[2]
-            td["dates"] = meta[3]
+            td["dates"] = _format_dates(meta[3])
             if len(meta) > 4:
                 td["tier"] = meta[4]
             # Override week with official calendar week
@@ -277,7 +302,7 @@ def write_site_data(
                 "city": meta[0],
                 "country": meta[1],
                 "surface": meta[2],
-                "dates": meta[3],
+                "dates": _format_dates(meta[3]),
             }
             tournaments_data.append(td)
 
@@ -377,7 +402,7 @@ def write_site_data(
                     new_td["city"] = cal_meta[0]
                     new_td["country"] = cal_meta[1]
                     new_td["surface"] = cal_meta[2]
-                    new_td["dates"] = cal_meta[3]
+                    new_td["dates"] = _format_dates(cal_meta[3])
                     if len(cal_meta) > 4:
                         new_td["tier"] = cal_meta[4]
                 tournaments_data.append(new_td)
