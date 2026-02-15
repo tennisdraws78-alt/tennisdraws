@@ -580,7 +580,19 @@ function renderTournamentBrowser() {
     for (var i = 0; i < tournList.length; i++) {
         if (tournList[i].tier) allTiers[tournList[i].tier] = true;
     }
-    var tierList = Object.keys(allTiers).sort();
+    var tierOrder = [
+        "Grand Slam", "ATP 1000", "WTA 1000", "ATP 500", "WTA 500",
+        "ATP 250", "WTA 250", "ATP", "WTA",
+        "ATP Challenger 125", "ATP Challenger 100", "ATP Challenger 75",
+        "ATP Challenger 50", "ATP Challenger", "WTA 125", "ITF"
+    ];
+    var tierRank = {};
+    for (var oi = 0; oi < tierOrder.length; oi++) tierRank[tierOrder[oi]] = oi;
+    var tierList = Object.keys(allTiers).sort(function (a, b) {
+        var ra = tierRank[a] !== undefined ? tierRank[a] : 99;
+        var rb = tierRank[b] !== undefined ? tierRank[b] : 99;
+        return ra - rb;
+    });
 
     // Filter tournaments
     var filtered = [];
@@ -637,6 +649,11 @@ function renderTournamentBrowser() {
     for (var wi = 0; wi < weekOrder.length; wi++) {
         var wk = weekOrder[wi];
         var group = weekGroups[wk];
+        group.sort(function (a, b) {
+            var ra = tierRank[a.tier] !== undefined ? tierRank[a.tier] : 99;
+            var rb = tierRank[b.tier] !== undefined ? tierRank[b.tier] : 99;
+            return ra - rb;
+        });
         html += '<div class="week-group">';
         html += '<div class="week-group-header">' + esc(wk) + '</div>';
         html += '<div class="tournament-grid">';
