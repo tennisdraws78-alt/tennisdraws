@@ -471,6 +471,20 @@ main {
     letter-spacing: 0.5px;
 }
 
+.ret-tag {
+    display: inline-block;
+    background: #c62828;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+}
+
 .section-indicator {
     font-size: 9px;
     opacity: 0.7;

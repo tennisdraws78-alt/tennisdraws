@@ -198,7 +198,7 @@ def _extract_tournament_info(pdf_text: str) -> dict:
 # ---------------------------------------------------------------------------
 
 def _parse_atp_withdrawals(text: str) -> list[dict]:
-    """Parse ATP withdrawal section.
+    """Parse ATP withdrawal and retirement sections.
 
     ATP format in the bottom-right area of the draw PDF:
         Withdrawals          Retirements/W.O.
@@ -211,6 +211,7 @@ def _parse_atp_withdrawals(text: str) -> list[dict]:
         "ATP Supervisor 1 de Minaur, Alex 6 H. Medjedovic (LL) A. Vukic (shoulder)"
 
     We look for patterns like "X. Name (reason)" after "Withdrawals" header.
+    Entries before the "Retirement" header are tagged as "WD", entries after as "RET".
     """
     withdrawals = []
 
@@ -227,6 +228,10 @@ def _parse_atp_withdrawals(text: str) -> list[dict]:
 
     # Collect all text after the "Withdrawals" header
     wd_text = "\n".join(lines[wd_start:])
+
+    # Find where retirements section begins (if present)
+    ret_match = re.search(r"Retirement|W\.?\s*O\.", wd_text, re.IGNORECASE)
+    ret_pos = ret_match.start() if ret_match else len(wd_text)
 
     # ATP withdrawal format: "Initial. Surname (reason)" or "Initial. Surname ()"
     # Also handles: "C. Garin (Illness)" and compound names "T. Seyboth Wild (Right leg)"
@@ -245,9 +250,14 @@ def _parse_atp_withdrawals(text: str) -> list[dict]:
         # Remove any trailing numbers (rank) that might have attached
         raw_name = re.sub(r"\s+\d+$", "", raw_name)
 
+        # Determine if this entry is a withdrawal or retirement
+        # based on its position relative to the "Retirement" header
+        wd_type = "RET" if m.start() >= ret_pos else "WD"
+
         withdrawals.append({
             "player_name": raw_name,
             "reason": reason if reason else "",
+            "withdrawal_type": wd_type,
         })
 
     return withdrawals
@@ -373,6 +383,7 @@ def _parse_wta_withdrawals(pdf_bytes: bytes) -> list[dict]:
             withdrawals.append({
                 "player_name": raw_name,
                 "reason": reason,
+                "withdrawal_type": "WD",
             })
 
         # Found withdrawals on this page, no need to check others
@@ -453,6 +464,7 @@ def scrape_atp() -> list[dict]:
                     "player_country": "",
                     "withdrawn": True,
                     "reason": wd["reason"],
+                    "withdrawal_type": wd.get("withdrawal_type", "WD"),
                     "gender": "M",
                     "source": "OfficialDraw",
                 })
@@ -500,6 +512,7 @@ def scrape_wta() -> list[dict]:
                     "player_country": "",
                     "withdrawn": True,
                     "reason": wd["reason"],
+                    "withdrawal_type": wd.get("withdrawal_type", "WD"),
                     "gender": "F",
                     "source": "OfficialDraw",
                 })

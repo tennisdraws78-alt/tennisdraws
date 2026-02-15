@@ -136,6 +136,7 @@ function buildTournamentEntries() {
                 source: e.source,
                 withdrawn: e.withdrawn,
                 reason: e.reason || "",
+                withdrawal_type: e.withdrawal_type || "",
             });
             map[key].sections[e.section] = true;
         }
@@ -325,8 +326,12 @@ function badgeHTML(entry, linkToTournament) {
     var wdCls = entry.withdrawn ? " withdrawn" : "";
     var sec = shortSection(entry.section);
     var secHTML = (sec && sec !== "MD") ? '<span class="section-indicator">' + sec + '</span>' : "";
-    var wdHTML = entry.withdrawn ? ' <span class="wd-tag">WD</span>' : "";
-    var title = esc(entry.tournament) + " | " + esc(entry.tier) + " | " + esc(entry.section) + (entry.source ? " | " + esc(entry.source) : "") + (entry.withdrawn && entry.reason ? " | " + esc(entry.reason) : "");
+    var isRet = entry.withdrawal_type === "RET";
+    var wdHTML = "";
+    if (entry.withdrawn) {
+        wdHTML = isRet ? ' <span class="ret-tag">RET</span>' : ' <span class="wd-tag">WD</span>';
+    }
+    var title = esc(entry.tournament) + " | " + esc(entry.tier) + " | " + esc(entry.section) + (entry.withdrawn && entry.reason ? " | " + esc(entry.reason) : "");
 
     if (linkToTournament) {
         return '<a href="#/tournament/' + encName(entry.tournament) + '" class="tournament-badge ' + cls + wdCls + '" title="' + title + '">' +
@@ -736,7 +741,8 @@ function renderTournamentDetail(name) {
             html += '<td class="player-col">' + esc(e.name);
         }
         if (e.withdrawn) {
-            html += ' <span class="wd-tag">WD</span>';
+            var isRet = e.withdrawal_type === "RET";
+            html += isRet ? ' <span class="ret-tag">RET</span>' : ' <span class="wd-tag">WD</span>';
             if (e.reason) html += ' <span class="wd-reason-inline">' + esc(e.reason) + '</span>';
         }
         html += '</td>';
@@ -793,6 +799,7 @@ function renderWithdrawals() {
                 week: e.week,
                 source: e.source,
                 reason: e.reason || "",
+                withdrawal_type: e.withdrawal_type || "",
             });
         }
     }
@@ -892,6 +899,9 @@ function renderWithdrawals() {
                         html += '<a href="#/tournament/' + encName(t.tournament) + '" class="tournament-badge ' + getBadgeClass(t.tier) + '">' + esc(t.tournament) + '</a>';
                         var sec = shortSection(t.section);
                         if (sec) html += '<span class="wd-section">' + sec + '</span>';
+                        if (t.withdrawal_type === "RET") {
+                            html += '<span class="ret-tag">RET</span>';
+                        }
                         if (t.reason) html += '<span class="wd-reason">' + esc(t.reason) + '</span>';
                         html += '</div>';
                     }

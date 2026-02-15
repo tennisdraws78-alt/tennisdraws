@@ -88,7 +88,7 @@ def write_site_data(
                                 deduped[idx_d]["withdrawn"] = True
                                 deduped[idx_d]["source"] = entry.get("source", existing["source"])
                             break
-                # Also allow OfficialDraw to attach reason
+                # Also allow OfficialDraw to attach reason and withdrawal_type
                 if entry.get("source") == "OfficialDraw" and entry.get("reason"):
                     for idx_d, existing in enumerate(deduped):
                         if (existing["tournament"] == tourn_name
@@ -97,6 +97,8 @@ def write_site_data(
                             deduped[idx_d]["source"] = "OfficialDraw"
                             deduped[idx_d]["reason"] = entry.get("reason", "")
                             deduped[idx_d]["withdrawn"] = True
+                            if entry.get("withdrawal_type"):
+                                deduped[idx_d]["withdrawal_type"] = entry["withdrawal_type"]
                             break
                 continue
             seen.add(dedup_key)
@@ -115,6 +117,9 @@ def write_site_data(
             reason = entry.get("reason", "")
             if reason:
                 entry_data["reason"] = reason
+            wd_type = entry.get("withdrawal_type", "")
+            if wd_type:
+                entry_data["withdrawal_type"] = wd_type
             deduped.append(entry_data)
 
             # Build tournament index
@@ -130,6 +135,8 @@ def write_site_data(
             }
             if reason:
                 tp_entry["reason"] = reason
+            if wd_type:
+                tp_entry["withdrawal_type"] = wd_type
             tournament_players[t_key].append(tp_entry)
 
         deduped.sort(key=lambda e: _week_sort_key(e["week"]))
