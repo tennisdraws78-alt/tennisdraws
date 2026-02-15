@@ -203,14 +203,43 @@ def write_site_data(
             "playerCount": t["playerCount"],
             "sections": sorted(t["sections"]),
         }
-        # Enrich with calendar metadata (surface, dates, city, country)
+        # Enrich with calendar metadata (surface, dates, city, country, tier)
         meta = cal.get(t["name"])
         if meta:
             td["city"] = meta[0]
             td["country"] = meta[1]
             td["surface"] = meta[2]
             td["dates"] = meta[3]
+            if len(meta) > 4:
+                td["tier"] = meta[4]  # override with official tier
         tournaments_data.append(td)
+
+    # --- Inject all ATP calendar tournaments that have no scraped entries yet ---
+    seen_names = {t["name"].lower() for t in tournaments_data}
+    for cal_name, meta in cal.items():
+        if cal_name.lower() not in seen_names:
+            # Parse "2 Jan - 11 Jan" → "Jan 2" canonical week format
+            week_str = ""
+            if meta[3]:
+                import re as _re
+                dm = _re.match(r"(\d{1,2})\s+(\w{3})", meta[3])
+                if dm:
+                    week_str = f"{dm.group(2)} {dm.group(1)}"
+            td = {
+                "name": cal_name,
+                "tier": meta[4] if len(meta) > 4 else "",
+                "week": week_str,
+                "playerCount": 0,
+                "sections": [],
+                "city": meta[0],
+                "country": meta[1],
+                "surface": meta[2],
+                "dates": meta[3],
+            }
+            tournaments_data.append(td)
+
+    # Re-sort after injecting calendar-only tournaments
+    tournaments_data.sort(key=lambda t: _week_sort_key(t.get("week", "")))
 
     # --- Build full entry lists for Challenger/125 tiers ---
     full_entries_data = {}
@@ -300,6 +329,8 @@ def write_site_data(
                     new_td["country"] = cal_meta[1]
                     new_td["surface"] = cal_meta[2]
                     new_td["dates"] = cal_meta[3]
+                    if len(cal_meta) > 4:
+                        new_td["tier"] = cal_meta[4]
                 tournaments_data.append(new_td)
             else:
                 # Update player count to reflect full list
