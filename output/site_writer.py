@@ -194,6 +194,14 @@ def write_site_data(
                 seen_tournaments[t_key]["playerCount"] += 1
 
     cal = getattr(config, "ATP_CALENDAR", {})
+
+    def _cal_week(dates_str):
+        """Parse '2 Jan - 11 Jan' → 'Jan 2' canonical week format."""
+        if not dates_str:
+            return ""
+        dm = re.match(r"(\d{1,2})\s+(\w{3})", dates_str)
+        return f"{dm.group(2)} {dm.group(1)}" if dm else ""
+
     for t_key in sorted(seen_tournaments, key=lambda k: _week_sort_key(seen_tournaments[k]["week"])):
         t = seen_tournaments[t_key]
         td = {
@@ -203,7 +211,7 @@ def write_site_data(
             "playerCount": t["playerCount"],
             "sections": sorted(t["sections"]),
         }
-        # Enrich with calendar metadata (surface, dates, city, country, tier)
+        # Enrich with calendar metadata (surface, dates, city, country, tier, week)
         meta = cal.get(t["name"])
         if meta:
             td["city"] = meta[0]
@@ -211,24 +219,21 @@ def write_site_data(
             td["surface"] = meta[2]
             td["dates"] = meta[3]
             if len(meta) > 4:
-                td["tier"] = meta[4]  # override with official tier
+                td["tier"] = meta[4]
+            # Override week with official calendar week
+            cal_wk = _cal_week(meta[3])
+            if cal_wk:
+                td["week"] = cal_wk
         tournaments_data.append(td)
 
     # --- Inject all ATP calendar tournaments that have no scraped entries yet ---
     seen_names = {t["name"].lower() for t in tournaments_data}
     for cal_name, meta in cal.items():
         if cal_name.lower() not in seen_names:
-            # Parse "2 Jan - 11 Jan" → "Jan 2" canonical week format
-            week_str = ""
-            if meta[3]:
-                import re as _re
-                dm = _re.match(r"(\d{1,2})\s+(\w{3})", meta[3])
-                if dm:
-                    week_str = f"{dm.group(2)} {dm.group(1)}"
             td = {
                 "name": cal_name,
                 "tier": meta[4] if len(meta) > 4 else "",
-                "week": week_str,
+                "week": _cal_week(meta[3]),
                 "playerCount": 0,
                 "sections": [],
                 "city": meta[0],
@@ -350,7 +355,7 @@ def write_site_data(
     total_players = len(players_data)
     players_with_entries = sum(1 for p in players_data if p["entries"])
     total_entries = sum(len(p["entries"]) for p in players_data)
-    unique_tournaments = len(seen_tournaments)
+    unique_tournaments = len(tournaments_data)
 
     stats = {
         "totalPlayers": total_players,
