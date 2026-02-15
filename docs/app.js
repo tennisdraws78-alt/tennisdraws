@@ -809,7 +809,13 @@ function renderWithdrawals() {
     var genderFilter = "all";
     var html = '<div class="withdrawals-view">';
     html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><span class="bc-current">Withdrawals</span></div>';
-    html += '<div class="section-title">Withdrawals (' + withdrawals.length + ')</div>';
+    // Count unique players
+    var uniqueWdPlayers = {};
+    for (var i = 0; i < withdrawals.length; i++) {
+        uniqueWdPlayers[withdrawals[i].playerName] = true;
+    }
+    var uniqueWdCount = Object.keys(uniqueWdPlayers).length;
+    html += '<div class="section-title">Withdrawals (' + uniqueWdCount + ' players)</div>';
 
     // Gender filter buttons
     html += '<div class="wd-filters">';
@@ -855,10 +861,23 @@ function renderWithdrawals() {
 
             for (var gsi = 0; gsi < genderSections.length; gsi++) {
                 var gs = genderSections[gsi];
-                html += '<div class="wd-gender-header" data-gender="' + (gs.label === "ATP" ? "Men" : "Women") + '">' + gs.label + ' (' + gs.items.length + ')</div>';
-                html += '<div class="wd-feed">';
+                // Group by player name to avoid repeating the same player
+                var playerGroups = [];
+                var playerGroupMap = {};
                 for (var gi = 0; gi < gs.items.length; gi++) {
                     var w = gs.items[gi];
+                    var pkey = w.playerName;
+                    if (!playerGroupMap[pkey]) {
+                        playerGroupMap[pkey] = { player: w, tournaments: [] };
+                        playerGroups.push(playerGroupMap[pkey]);
+                    }
+                    playerGroupMap[pkey].tournaments.push(w);
+                }
+                html += '<div class="wd-gender-header" data-gender="' + (gs.label === "ATP" ? "Men" : "Women") + '">' + gs.label + ' (' + playerGroups.length + ')</div>';
+                html += '<div class="wd-feed">';
+                for (var pi = 0; pi < playerGroups.length; pi++) {
+                    var pg = playerGroups[pi];
+                    var w = pg.player;
                     var genderCls = w.playerGender === "Men" ? "wd-men" : "wd-women";
                     html += '<div class="wd-feed-card ' + genderCls + '" data-gender="' + esc(w.playerGender) + '">';
                     html += '<div class="wd-player-info">';
@@ -866,12 +885,17 @@ function renderWithdrawals() {
                     html += '<a href="#/player/' + encName(w.playerName) + '" class="wd-player-name">' + esc(w.playerName) + '</a>';
                     html += '<span class="wd-country">' + esc(w.playerCountry) + '</span>';
                     html += '</div>';
-                    html += '<div class="wd-tournament-info">';
-                    html += '<a href="#/tournament/' + encName(w.tournament) + '" class="tournament-badge ' + getBadgeClass(w.tier) + '">' + esc(w.tournament) + '</a>';
-                    var sec = shortSection(w.section);
-                    if (sec) html += '<span class="wd-section">' + sec + '</span>';
-                    html += '<span class="wd-source">' + esc(w.source) + '</span>';
-                    if (w.reason) html += '<span class="wd-reason">' + esc(w.reason) + '</span>';
+                    html += '<div class="wd-tournament-list">';
+                    for (var ti = 0; ti < pg.tournaments.length; ti++) {
+                        var t = pg.tournaments[ti];
+                        html += '<div class="wd-tournament-info">';
+                        html += '<a href="#/tournament/' + encName(t.tournament) + '" class="tournament-badge ' + getBadgeClass(t.tier) + '">' + esc(t.tournament) + '</a>';
+                        var sec = shortSection(t.section);
+                        if (sec) html += '<span class="wd-section">' + sec + '</span>';
+                        html += '<span class="wd-source">' + esc(t.source) + '</span>';
+                        if (t.reason) html += '<span class="wd-reason">' + esc(t.reason) + '</span>';
+                        html += '</div>';
+                    }
                     html += '</div>';
                     html += '</div>';
                 }
