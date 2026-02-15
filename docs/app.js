@@ -551,7 +551,9 @@ function renderPlayerProfile(name) {
             html += '<span class="entry-card-section">' + esc(ce.section) + '</span>';
             html += '<span class="entry-card-week">' + esc(ce.week) + '</span>';
             html += '</div>';
-            html += '<span class="entry-card-source">' + esc(ce.source) + '</span>';
+            if (ce.withdrawn && ce.reason) {
+                html += '<span class="wd-reason">' + esc(ce.reason) + '</span>';
+            }
             html += '</div>';
         }
         html += '</div></div>';
@@ -685,7 +687,12 @@ function renderTournamentDetail(name) {
         return;
     }
 
-    var sections = Object.keys(tourn.sections).sort();
+    var sectionOrder = {"Main Draw": 0, "Qualifying": 1, "Alternates": 2};
+    var sections = Object.keys(tourn.sections).sort(function (a, b) {
+        var oa = sectionOrder[a] !== undefined ? sectionOrder[a] : 9;
+        var ob = sectionOrder[b] !== undefined ? sectionOrder[b] : 9;
+        return oa - ob;
+    });
     var currentSection = state.tournamentSection;
     if (currentSection !== "all" && !tourn.sections[currentSection]) {
         currentSection = "all";

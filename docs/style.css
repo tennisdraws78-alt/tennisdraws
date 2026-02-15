@@ -939,9 +939,8 @@ main {
 .entry-table tbody tr.withdrawn-row { opacity: 0.5; }
 .entry-table tbody tr.withdrawn-row td.player-col a { text-decoration: line-through; }
 
-/* Unranked player rows in full entry lists */
-.entry-table tbody tr.unranked-row td.player-col { color: var(--text-secondary); }
-.entry-table tbody tr.unranked-row td.rank-col { opacity: 0.5; }
+/* Unranked player rows in full entry lists — same style as ranked */
+.entry-table tbody tr.unranked-row td.player-col { color: var(--text-primary); font-weight: 600; }
 
 /* Full entry list badge */
 .full-list-badge {
