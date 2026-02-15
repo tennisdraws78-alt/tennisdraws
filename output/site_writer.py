@@ -193,7 +193,24 @@ def write_site_data(
             if not entry.get("withdrawn"):
                 seen_tournaments[t_key]["playerCount"] += 1
 
-    cal = getattr(config, "ATP_CALENDAR", {})
+    # Keep calendars separate for tier-aware lookup
+    _atp_cal = getattr(config, "ATP_CALENDAR", {})
+    _wta_cal = getattr(config, "WTA_CALENDAR", {})
+    _wta125_cal = getattr(config, "WTA125_CALENDAR", {})
+
+    def _cal_lookup(name, tier=""):
+        """Find calendar metadata, preferring the calendar matching the tier."""
+        tier_l = tier.lower()
+        if "wta 125" in tier_l:
+            if name in _wta125_cal:
+                return _wta125_cal[name]
+        if "wta" in tier_l:
+            if name in _wta_cal:
+                return _wta_cal[name]
+        if name in _atp_cal:
+            return _atp_cal[name]
+        # Fallback: try all calendars
+        return _wta_cal.get(name) or _wta125_cal.get(name)
 
     def _cal_week(dates_str):
         """Parse '2 Jan - 11 Jan' → 'Jan 2' canonical week format."""
@@ -212,7 +229,7 @@ def write_site_data(
             "sections": sorted(t["sections"]),
         }
         # Enrich with calendar metadata (surface, dates, city, country, tier, week)
-        meta = cal.get(t["name"])
+        meta = _cal_lookup(t["name"], t["tier"])
         if meta:
             td["city"] = meta[0]
             td["country"] = meta[1]
@@ -226,9 +243,13 @@ def write_site_data(
                 td["week"] = cal_wk
         tournaments_data.append(td)
 
-    # --- Inject all ATP calendar tournaments that have no scraped entries yet ---
+    # --- Inject all calendar tournaments that have no scraped entries yet ---
+    all_cal = {}
+    all_cal.update(_wta125_cal)
+    all_cal.update(_wta_cal)
+    all_cal.update(_atp_cal)
     seen_names = {t["name"].lower() for t in tournaments_data}
-    for cal_name, meta in cal.items():
+    for cal_name, meta in all_cal.items():
         if cal_name.lower() not in seen_names:
             td = {
                 "name": cal_name,
@@ -328,7 +349,7 @@ def write_site_data(
                     "sections": sorted(set(p["s"] for p in deduped_players)),
                     "hasFullList": True,
                 }
-                cal_meta = cal.get(meta["name"])
+                cal_meta = _cal_lookup(meta["name"], meta.get("tier", ""))
                 if cal_meta:
                     new_td["city"] = cal_meta[0]
                     new_td["country"] = cal_meta[1]
