@@ -100,19 +100,97 @@ def _merge_close_weeks(weeks: set) -> dict:
     return merge_map
 
 
+# Map official / sponsor tournament names → canonical city-based names.
+# Keys must be lowercase.  Add new aliases as tournaments change sponsors.
+TOURNAMENT_ALIASES = {
+    # ATP main-tour official names
+    "abn amro open": "Rotterdam",
+    "nexo dallas open": "Dallas",
+    "ieb+ argentina open": "Buenos Aires",
+    "argentina open": "Buenos Aires",
+    "open sud de france": "Montpellier",
+    "qatar exxonmobil open": "Doha",
+    "qatar open": "Doha",
+    "mexican open": "Acapulco",
+    "abierto mexicano de tenis": "Acapulco",
+    "rio open": "Rio de Janeiro",
+    "brasil open": "Rio de Janeiro",
+    "bnp paribas open": "Indian Wells",
+    "miami open": "Miami",
+    "monte-carlo masters": "Monte Carlo",
+    "rolex monte-carlo masters": "Monte Carlo",
+    "barcelona open": "Barcelona",
+    "mutua madrid open": "Madrid",
+    "internazionali d'italia": "Rome",
+    "roland garros": "Roland Garros",
+    "cinch championships": "London",
+    "halle open": "Halle",
+    "terra wortmann open": "Halle",
+    "wimbledon": "Wimbledon",
+    "canadian open": "Montreal",
+    "national bank open": "Montreal",
+    "cincinnati open": "Cincinnati",
+    "western & southern open": "Cincinnati",
+    "us open": "US Open",
+    "china open": "Beijing",
+    "shanghai masters": "Shanghai",
+    "rolex shanghai masters": "Shanghai",
+    "rolex paris masters": "Paris",
+    "nitto atp finals": "ATP Finals",
+    # WTA official names
+    "qatar totalenergies open": "Doha",
+    "dubai duty free tennis championships": "Dubai",
+    "australian open": "Australian Open",
+    # TickTock / draw PDF Challenger & other names → canonical city name
+    "steve carter baton rouge challenger": "Baton Rouge",
+    "baton rouge challenger": "Baton Rouge",
+    "tenerife challenger 1": "Tenerife",
+    "tenerife challenger 2": "Tenerife 2",
+    "tenerife challenger": "Tenerife",
+    "brisbane tennis international #2": "Brisbane 2",
+    "brisbane tennis international": "Brisbane",
+    "brisbane international presented by anz": "Brisbane",
+    "terega open pau pyrenees": "Pau",
+    "terega open pau pyrénées": "Pau",
+    "novaworld phan thiet challenger 1": "Phan Thiet",
+    "novaworld phan thiet challenger 2": "Phan Thiet 2",
+    "bahrain open tennis challenger": "Bahrain",
+    "bank of china hong kong tennis open": "Hong Kong",
+    "open occitanie": "Montpellier",
+    "koblenz tennis open": "Koblenz",
+    "soma bay open": "Soma Bay",
+    "indoor oeiras open 1": "Oeiras",
+    "oeiras indoor 2": "Oeiras 2",
+    "les sables d'olonne": "Les Sables d'Olonne",
+    "bangkok open 1": "Bangkok",
+    "bangkok open 2": "Bangkok 2",
+}
+
+
 def _normalize_tournament_name(name: str) -> str:
     """Normalize tournament name so entries from different sources merge.
 
-    Spazio uses "ATP DOHA", "WTA DUBAI", "ATP RIO DE JANEIRO" (ALL CAPS with prefix).
-    TickTock uses "Doha", "Dubai", "Rio de Janeiro" (title case, no prefix).
+    Handles three source formats:
+    - Spazio:    "ATP DOHA", "Baton Rouge (CH 50)"  (ALL CAPS / city + CH level)
+    - TickTock:  "Doha", "Steve Carter Baton Rouge Challenger"  (official names)
+    - Draw PDFs: "ABN AMRO Open", "Nexo Dallas Open"  (sponsor names from PDF header)
 
-    We strip the ATP/WTA prefix and title-case ALL-CAPS names.
-    Challenger names like "Lille (CH 125)" are already matching — leave as-is.
+    Strategy:
+    1. Check alias table for exact match (sponsor → city)
+    2. Strip ATP/WTA prefix and title-case ALL-CAPS names
+    3. For Challengers with "(CH ##)" suffix, extract city name for alias lookup
     """
     if not name:
         return name
+
+    # Check alias table first (case-insensitive)
+    alias = TOURNAMENT_ALIASES.get(name.lower().strip())
+    if alias:
+        return alias
+
     # Strip "ATP " or "WTA " prefix
     stripped = re.sub(r"^(?:ATP|WTA)\s+", "", name)
+
     # If the result is ALL-CAPS (and not a short acronym), title-case it
     if stripped == stripped.upper() and len(stripped) > 3:
         # Title case, but handle "DE", "DI" etc. properly
@@ -124,6 +202,19 @@ def _normalize_tournament_name(name: str) -> str:
             else:
                 result.append(w.capitalize())
         stripped = " ".join(result)
+
+    # Strip "(CH ##)" suffix from Challenger names so they merge with
+    # TickTock names that don't include the level.  The tier badge already
+    # shows the level (e.g. "ATP Challenger 50").
+    ch_match = re.match(r"^(.+?)\s*\(CH\s*\d+\)$", stripped)
+    if ch_match:
+        stripped = ch_match.group(1).strip()
+
+    # Check alias again after stripping/title-casing
+    alias2 = TOURNAMENT_ALIASES.get(stripped.lower().strip())
+    if alias2:
+        return alias2
+
     return stripped
 
 
