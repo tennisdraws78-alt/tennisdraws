@@ -78,6 +78,20 @@ def write_site_data(
             if week_val:
                 all_raw_weeks.add(week_val)
 
+    # Add weeks from calendar tournaments so Dashboard shows all upcoming weeks
+    for _cal_dict in (
+        getattr(config, "ATP_CALENDAR", {}),
+        getattr(config, "WTA_CALENDAR", {}),
+        getattr(config, "WTA125_CALENDAR", {}),
+        getattr(config, "CHALLENGER_CALENDAR", {}),
+    ):
+        for _cal_meta in _cal_dict.values():
+            _dm = re.match(r"(\d{1,2})\s+(\w{3})", _cal_meta[3])
+            if _dm:
+                _cw = _normalize_week(f"{_dm.group(2)} {_dm.group(1)}")
+                if _cw:
+                    all_raw_weeks.add(_cw)
+
     week_merge_map = _merge_close_weeks(all_raw_weeks)
 
     # --- Pass 2: build player data with deduped entries ---
@@ -203,6 +217,21 @@ def write_site_data(
             "country": player.get("country_code", ""),
             "entries": deduped,
         })
+
+    # Ensure calendar weeks appear in Dashboard columns even without scraped entries
+    for _cal_dict in (
+        getattr(config, "ATP_CALENDAR", {}),
+        getattr(config, "WTA_CALENDAR", {}),
+        getattr(config, "WTA125_CALENDAR", {}),
+        getattr(config, "CHALLENGER_CALENDAR", {}),
+    ):
+        for _cal_meta in _cal_dict.values():
+            _dm = re.match(r"(\d{1,2})\s+(\w{3})", _cal_meta[3])
+            if _dm:
+                _cw = _normalize_week(f"{_dm.group(2)} {_dm.group(1)}")
+                _cw = week_merge_map.get(_cw, _cw)
+                if _cw:
+                    all_weeks.add(_cw)
 
     # Sort weeks chronologically
     sorted_weeks = sorted(all_weeks, key=_week_sort_key)

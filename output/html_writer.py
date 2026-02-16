@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import json
 import re
+import unicodedata
 from datetime import datetime
 import config
 
@@ -382,6 +383,12 @@ TOURNAMENT_ALIASES = {
 }
 
 
+def _strip_accents(text: str) -> str:
+    """'Mérida' → 'Merida', 'Três-Rivières' → 'Tres-Rivieres'"""
+    nfkd = unicodedata.normalize('NFD', text)
+    return ''.join(c for c in nfkd if unicodedata.category(c) != 'Mn')
+
+
 def _normalize_tournament_name(name: str) -> str:
     """Normalize tournament name so entries from different sources merge.
 
@@ -398,8 +405,8 @@ def _normalize_tournament_name(name: str) -> str:
     if not name:
         return name
 
-    # Check alias table first (case-insensitive)
-    alias = TOURNAMENT_ALIASES.get(name.lower().strip())
+    # Check alias table first (case-insensitive, accent-insensitive)
+    alias = TOURNAMENT_ALIASES.get(_strip_accents(name).lower().strip())
     if alias:
         return alias
 
@@ -426,11 +433,11 @@ def _normalize_tournament_name(name: str) -> str:
         stripped = ch_match.group(1).strip()
 
     # Check alias again after stripping/title-casing
-    alias2 = TOURNAMENT_ALIASES.get(stripped.lower().strip())
+    alias2 = TOURNAMENT_ALIASES.get(_strip_accents(stripped).lower().strip())
     if alias2:
         return alias2
 
-    return stripped
+    return _strip_accents(stripped)
 
 
 def _week_sort_key(week: str) -> tuple:
