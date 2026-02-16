@@ -225,6 +225,7 @@ def write_site_data(
                 "week": week_val,
                 "source": entry.get("source", ""),
                 "withdrawn": bool(entry.get("withdrawn")),
+                "gender": gender_label,
             }
             reason = entry.get("reason", "")
             if reason:
@@ -237,8 +238,9 @@ def write_site_data(
                 entry_data["entry_method"] = em
             deduped.append(entry_data)
 
-            # Build tournament index
-            t_key = tourn_name.lower()
+            # Build tournament index (gender-aware to avoid mixing
+            # ATP Dubai and WTA Dubai, etc.)
+            t_key = f"{tourn_name.lower()}|{gender_label.lower()}"
             tp_entry = {
                 "player": player["name"],
                 "rank": player.get("rank", 9999),
@@ -332,12 +334,13 @@ def write_site_data(
     seen_tournaments = {}
     for player in players_data:
         for entry in player["entries"]:
-            t_key = entry["tournament"].lower()
+            t_key = f"{entry['tournament'].lower()}|{player['gender'].lower()}"
             if t_key not in seen_tournaments:
                 seen_tournaments[t_key] = {
                     "name": entry["tournament"],
                     "tier": entry["tier"],
                     "week": entry["week"],
+                    "gender": player["gender"],
                     "playerCount": 0,
                     "sections": set(),
                 }
@@ -351,15 +354,28 @@ def write_site_data(
     _wta125_cal = getattr(config, "WTA125_CALENDAR", {})
     _chall_cal = getattr(config, "CHALLENGER_CALENDAR", {})
 
-    def _cal_lookup(name, tier=""):
-        """Find calendar metadata, preferring the calendar matching the tier."""
+    def _cal_lookup(name, tier="", gender=""):
+        """Find calendar metadata, preferring the calendar matching the tier/gender."""
         tier_l = tier.lower()
+        gender_l = gender.lower()
         if "challenger" in tier_l:
             if name in _chall_cal:
                 return _chall_cal[name]
         if "wta 125" in tier_l:
             if name in _wta125_cal:
                 return _wta125_cal[name]
+        # Use gender to pick the right calendar when both ATP and WTA share a name
+        if gender_l == "women":
+            if name in _wta_cal:
+                return _wta_cal[name]
+            if name in _wta125_cal:
+                return _wta125_cal[name]
+        elif gender_l == "men":
+            if name in _atp_cal:
+                return _atp_cal[name]
+            if name in _chall_cal:
+                return _chall_cal[name]
+        # Fallback: tier-based matching
         if "wta" in tier_l:
             if name in _wta_cal:
                 return _wta_cal[name]
@@ -381,11 +397,12 @@ def write_site_data(
             "name": t["name"],
             "tier": t["tier"],
             "week": t["week"],
+            "gender": t.get("gender", ""),
             "playerCount": t["playerCount"],
             "sections": sorted(t["sections"]),
         }
         # Enrich with calendar metadata (surface, dates, city, country, tier, week)
-        meta = _cal_lookup(t["name"], t["tier"])
+        meta = _cal_lookup(t["name"], t["tier"], t.get("gender", ""))
         if meta:
             td["city"] = meta[0]
             td["country"] = meta[1]
@@ -405,26 +422,32 @@ def write_site_data(
         tournaments_data.append(td)
 
     # --- Inject all calendar tournaments that have no scraped entries yet ---
-    all_cal = {}
-    all_cal.update(_chall_cal)
-    all_cal.update(_wta125_cal)
-    all_cal.update(_wta_cal)
-    all_cal.update(_atp_cal)
-    seen_names = {t["name"].lower() for t in tournaments_data}
-    for cal_name, meta in all_cal.items():
-        if cal_name.lower() not in seen_names:
-            td = {
-                "name": cal_name,
-                "tier": meta[4] if len(meta) > 4 else "",
-                "week": _cal_week(meta[3]),
-                "playerCount": 0,
-                "sections": [],
-                "city": meta[0],
-                "country": meta[1],
-                "surface": meta[2],
-                "dates": _format_dates(meta[3]),
-            }
-            tournaments_data.append(td)
+    # Build list of (calendar_dict, gender_label) pairs
+    _cal_gender_pairs = [
+        (_chall_cal, "Men"),
+        (_wta125_cal, "Women"),
+        (_wta_cal, "Women"),
+        (_atp_cal, "Men"),
+    ]
+    seen_keys = {f"{t['name'].lower()}|{t.get('gender', '').lower()}" for t in tournaments_data}
+    for cal_dict, cal_gender in _cal_gender_pairs:
+        for cal_name, meta in cal_dict.items():
+            inject_key = f"{cal_name.lower()}|{cal_gender.lower()}"
+            if inject_key not in seen_keys:
+                seen_keys.add(inject_key)
+                td = {
+                    "name": cal_name,
+                    "tier": meta[4] if len(meta) > 4 else "",
+                    "week": _cal_week(meta[3]),
+                    "gender": cal_gender,
+                    "playerCount": 0,
+                    "sections": [],
+                    "city": meta[0],
+                    "country": meta[1],
+                    "surface": meta[2],
+                    "dates": _format_dates(meta[3]),
+                }
+                tournaments_data.append(td)
 
     # Re-sort after injecting calendar-only tournaments
     tournaments_data.sort(key=lambda t: _week_sort_key(t.get("week", "")))
@@ -444,7 +467,8 @@ def write_site_data(
             week_val = _normalize_week(week_val)
             week_val = week_merge_map.get(week_val, week_val)
 
-            t_key = tourn_name.lower()
+            _raw_gender = "Women" if entry.get("gender") == "F" else "Men"
+            t_key = f"{tourn_name.lower()}|{_raw_gender.lower()}"
 
             if t_key not in raw_tournament_meta:
                 raw_tournament_meta[t_key] = {
@@ -452,7 +476,7 @@ def write_site_data(
                     "tier": entry.get("tier", ""),
                     "week": week_val,
                     "source": entry.get("source", ""),
-                    "gender": "Women" if entry.get("gender") == "F" else "Men",
+                    "gender": _raw_gender,
                 }
 
             # Dedup players by name within a tournament
@@ -517,11 +541,12 @@ def write_site_data(
                     "name": meta["name"],
                     "tier": entry_tier,
                     "week": meta["week"],
+                    "gender": meta.get("gender", ""),
                     "playerCount": len(deduped_players),
                     "sections": sorted(set(p["s"] for p in deduped_players)),
                     "hasFullList": True,
                 }
-                cal_meta = _cal_lookup(meta["name"], meta.get("tier", ""))
+                cal_meta = _cal_lookup(meta["name"], meta.get("tier", ""), meta.get("gender", ""))
                 if cal_meta:
                     new_td["city"] = cal_meta[0]
                     new_td["country"] = cal_meta[1]
@@ -532,8 +557,10 @@ def write_site_data(
                 tournaments_data.append(new_td)
             else:
                 # Update player count to reflect full list
+                _match_key = f"{meta['name'].lower()}|{meta.get('gender', '').lower()}"
                 for td in tournaments_data:
-                    if td["name"].lower() == t_key:
+                    _td_key = f"{td['name'].lower()}|{td.get('gender', '').lower()}"
+                    if _td_key == _match_key:
                         td["playerCount"] = len(deduped_players)
                         td["hasFullList"] = True
                         break

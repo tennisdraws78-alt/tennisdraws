@@ -110,19 +110,21 @@ for (var i = 0; i < D.players.length; i++) {
     playerIndex[p.name.toLowerCase()] = p;
 }
 
-// Build tournament lookup
+// Build tournament lookup (gender-aware: "dubai|women" vs "dubai|men")
 function buildTournamentEntries() {
     var map = {};
     for (var pi = 0; pi < D.players.length; pi++) {
         var player = D.players[pi];
+        var genderKey = (player.gender || "").toLowerCase();
         for (var ei = 0; ei < player.entries.length; ei++) {
             var e = player.entries[ei];
-            var key = e.tournament.toLowerCase();
+            var key = e.tournament.toLowerCase() + "|" + genderKey;
             if (!map[key]) {
                 map[key] = {
                     name: e.tournament,
                     tier: e.tier,
                     week: e.week,
+                    gender: player.gender,
                     entries: [],
                     sections: {},
                 };
@@ -159,6 +161,7 @@ function buildTournamentEntries() {
                     name: fe.name,
                     tier: fe.tier,
                     week: fe.week,
+                    gender: fe.gender || "",
                     entries: [],
                     sections: {},
                     hasFullList: true,
@@ -313,11 +316,13 @@ function route() {
         if (itfNav) itfNav.classList.add("active");
         renderITFBrowser();
     } else if (hash.indexOf("#/tournament/") === 0) {
-        var tournName = decName(hash.substring(13));
+        var tournParts = hash.substring(13).split("|");
+        var tournName = decName(tournParts[0]);
+        var tournGender = tournParts[1] ? decName(tournParts[1]) : "";
         state.currentView = "tournament";
         controls.classList.add("hidden");
         resultsCount.style.display = "none";
-        renderTournamentDetail(tournName);
+        renderTournamentDetail(tournName, tournGender);
     } else {
         // Fallback to dashboard
         window.location.hash = "#/";
@@ -357,7 +362,9 @@ function badgeHTML(entry, linkToTournament) {
         (entry.withdrawn && entry.reason ? " | " + esc(entry.reason) : "");
 
     if (linkToTournament) {
-        return '<a href="#/tournament/' + encName(entry.tournament) + '" class="tournament-badge ' + cls + wdCls + '" title="' + title + '">' +
+        var tGender = entry.gender || "";
+        var tLink = encName(entry.tournament) + (tGender ? "|" + encName(tGender) : "");
+        return '<a href="#/tournament/' + tLink + '" class="tournament-badge ' + cls + wdCls + '" title="' + title + '">' +
             esc(entry.tournament) + wdHTML + secHTML + '</a>';
     }
     return '<span class="tournament-badge ' + cls + wdCls + '" title="' + title + '">' +
@@ -684,7 +691,8 @@ function renderTournamentBrowser() {
         html += '<div class="tournament-grid">';
         for (var gi = 0; gi < group.length; gi++) {
             var t = group[gi];
-            html += '<a href="#/tournament/' + encName(t.name) + '" class="tournament-card">';
+            var tCardLink = encName(t.name) + (t.gender ? "|" + encName(t.gender) : "");
+            html += '<a href="#/tournament/' + tCardLink + '" class="tournament-card">';
             html += '<div class="tournament-card-top">';
             html += '<span class="tournament-card-tier">' + esc(t.tier) + '</span>';
             if (t.surface) {
@@ -861,10 +869,25 @@ function renderITFBrowser() {
 }
 
 // === TOURNAMENT DETAIL VIEW ===
-function renderTournamentDetail(name) {
+function renderTournamentDetail(name, gender) {
     var container = document.getElementById("app");
-    var key = name.toLowerCase();
+    var key = name.toLowerCase() + (gender ? "|" + gender.toLowerCase() : "");
     var tourn = tournamentEntries[key];
+    // Fallback: try without gender for backward compat with old URLs
+    if (!tourn && gender) {
+        tourn = tournamentEntries[name.toLowerCase()];
+    }
+    if (!tourn && !gender) {
+        // Try to find by name prefix (matches first gender variant)
+        var prefix = name.toLowerCase() + "|";
+        var allKeys = Object.keys(tournamentEntries);
+        for (var ki = 0; ki < allKeys.length; ki++) {
+            if (allKeys[ki].indexOf(prefix) === 0) {
+                tourn = tournamentEntries[allKeys[ki]];
+                break;
+            }
+        }
+    }
 
     if (!tourn) {
         container.innerHTML = '<div class="tournament-detail-view"><div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><a href="#/tournaments">Tournaments</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(name) + '</span></div><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Tournament not found</div><div class="empty-text">' + esc(name) + ' was not found in the database</div></div></div>';
@@ -899,10 +922,16 @@ function renderTournamentDetail(name) {
     var html = '<div class="tournament-detail-view">';
     html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><a href="#/tournaments">Tournaments</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(tourn.name) + '</span></div>';
 
-    // Find calendar metadata from D.tournaments
+    // Find calendar metadata from D.tournaments (match by name + gender)
     var tournMeta = null;
+    var _tournGender = (tourn.gender || "").toLowerCase();
     for (var mi = 0; mi < (D.tournaments || []).length; mi++) {
-        if (D.tournaments[mi].name.toLowerCase() === key) { tournMeta = D.tournaments[mi]; break; }
+        var _tm = D.tournaments[mi];
+        var _tmGender = (_tm.gender || "").toLowerCase();
+        if (_tm.name.toLowerCase() === name.toLowerCase() && (!_tournGender || !_tmGender || _tournGender === _tmGender)) {
+            tournMeta = _tm;
+            break;
+        }
     }
 
     // Header
@@ -1134,7 +1163,8 @@ function renderWithdrawals() {
                     for (var ti = 0; ti < pg.tournaments.length; ti++) {
                         var t = pg.tournaments[ti];
                         html += '<div class="wd-tournament-info">';
-                        html += '<a href="#/tournament/' + encName(t.tournament) + '" class="tournament-badge ' + getBadgeClass(t.tier) + '">' + esc(t.tournament) + '</a>';
+                        var wdTLink = encName(t.tournament) + (t.playerGender ? "|" + encName(t.playerGender) : "");
+                        html += '<a href="#/tournament/' + wdTLink + '" class="tournament-badge ' + getBadgeClass(t.tier) + '">' + esc(t.tournament) + '</a>';
                         var sec = shortSection(t.section);
                         if (sec) html += '<span class="wd-section">' + sec + '</span>';
                         if (t.withdrawal_type === "RET") {
