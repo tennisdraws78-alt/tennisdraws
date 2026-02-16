@@ -493,6 +493,15 @@ main {
     letter-spacing: 0.3px;
 }
 
+.entry-method-indicator {
+    font-size: 9px;
+    opacity: 0.85;
+    display: block;
+    margin-top: 1px;
+    letter-spacing: 0.3px;
+    color: #fbbf24;
+}
+
 /* ===== PLAYER PROFILE VIEW ===== */
 .profile-view {
     padding: 24px;

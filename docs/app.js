@@ -137,6 +137,7 @@ function buildTournamentEntries() {
                 withdrawn: e.withdrawn,
                 reason: e.reason || "",
                 withdrawal_type: e.withdrawal_type || "",
+                entry_method: e.entry_method || "",
             });
             map[key].sections[e.section] = true;
         }
@@ -177,6 +178,7 @@ function buildTournamentEntries() {
                     section: fp.s || "Main Draw",
                     source: fe.source || "",
                     withdrawn: fp.w || false,
+                    entry_method: fp.m || "",
                 });
             }
             // Replace entries with full list
@@ -333,12 +335,26 @@ function badgeHTML(entry, linkToTournament) {
     var wdCls = entry.withdrawn ? " withdrawn" : "";
     var sec = shortSection(entry.section);
     var secHTML = (sec && sec !== "MD") ? '<span class="section-indicator">' + sec + '</span>' : "";
+
+    // Show entry_method indicator (WC, PR, LL, SE) — replaces section when MD
+    var em = entry.entry_method || "";
+    if (em) {
+        var emSpan = '<span class="entry-method-indicator">' + esc(em) + '</span>';
+        if (sec === "MD" || !sec) {
+            secHTML = emSpan;  // WC replaces hidden MD indicator
+        } else {
+            secHTML += emSpan; // Q + WC both shown for qualifying wildcards
+        }
+    }
+
     var isRet = entry.withdrawal_type === "RET";
     var wdHTML = "";
     if (entry.withdrawn) {
         wdHTML = isRet ? ' <span class="ret-tag">RET</span>' : ' <span class="wd-tag">WD</span>';
     }
-    var title = esc(entry.tournament) + " | " + esc(entry.tier) + " | " + esc(entry.section) + (entry.withdrawn && entry.reason ? " | " + esc(entry.reason) : "");
+    var title = esc(entry.tournament) + " | " + esc(entry.tier) + " | " + esc(entry.section) +
+        (em ? " | " + em : "") +
+        (entry.withdrawn && entry.reason ? " | " + esc(entry.reason) : "");
 
     if (linkToTournament) {
         return '<a href="#/tournament/' + encName(entry.tournament) + '" class="tournament-badge ' + cls + wdCls + '" title="' + title + '">' +
@@ -941,7 +957,9 @@ function renderTournamentDetail(name) {
             html += '<td class="player-col">' + esc(e.name) + '</td>';
         }
         html += '<td class="ctry-col">' + esc(e.country) + '</td>';
-        html += '<td>' + esc(e.section) + '</td>';
+        var secText = esc(e.section);
+        if (e.entry_method) secText += ' <span class="entry-method-indicator" style="display:inline">' + esc(e.entry_method) + '</span>';
+        html += '<td>' + secText + '</td>';
         html += '</tr>';
     }
 

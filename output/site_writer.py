@@ -232,6 +232,9 @@ def write_site_data(
             wd_type = entry.get("withdrawal_type", "")
             if wd_type:
                 entry_data["withdrawal_type"] = wd_type
+            em = entry.get("entry_method", "")
+            if em:
+                entry_data["entry_method"] = em
             deduped.append(entry_data)
 
             # Build tournament index
@@ -249,12 +252,19 @@ def write_site_data(
                 tp_entry["reason"] = reason
             if wd_type:
                 tp_entry["withdrawal_type"] = wd_type
+            if em:
+                tp_entry["entry_method"] = em
             tournament_players[t_key].append(tp_entry)
 
         # Remove false withdrawals: if a player is withdrawn from a lower
         # section (e.g. Qualifying) but active in a higher section (e.g. Main
         # Draw) for the same tournament+week, they were promoted — not withdrawn.
-        SECTION_RANK = {"Alternates": 0, "Qualifying": 1, "Main Draw": 2}
+        SECTION_RANK = {
+            "Alternates": 0, "Qualifying Alt": 0,
+            "Qualifying": 1, "Qualifying WC": 1,
+            "Wild Card": 1.5,
+            "Main Draw": 2,
+        }
         active_keys = set()
         for d in deduped:
             if not d.get("withdrawn"):
@@ -272,6 +282,22 @@ def write_site_data(
         ]
         if len(deduped) < before_promo:
             pass  # silently drop promoted entries
+
+        # Drop active lower-section entries when active higher-section exists
+        # for the same tournament+week (e.g., drop Q when active in MD).
+        active_by_tw = {}
+        for d in deduped:
+            if not d.get("withdrawn"):
+                key = (d["tournament"], d["week"])
+                sr = SECTION_RANK.get(d["section"], -1)
+                if key not in active_by_tw or sr > active_by_tw[key]:
+                    active_by_tw[key] = sr
+        deduped = [
+            d for d in deduped
+            if d.get("withdrawn")
+            or SECTION_RANK.get(d["section"], -1) >= active_by_tw.get(
+                (d["tournament"], d["week"]), -1)
+        ]
 
         deduped.sort(key=lambda e: _week_sort_key(e["week"]))
 
@@ -433,13 +459,17 @@ def write_site_data(
             player_name = entry.get("player_name", "")
             section = entry.get("section", "Main Draw")
             country = entry.get("player_country", "") or entry.get("country_code", "")
-            raw_by_tournament[t_key].append({
+            raw_entry = {
                 "n": player_name,
                 "r": entry.get("player_rank", 0),
                 "c": country,
                 "s": section,
                 "w": bool(entry.get("withdrawn")),
-            })
+            }
+            _em = entry.get("entry_method", "")
+            if _em:
+                raw_entry["m"] = _em
+            raw_by_tournament[t_key].append(raw_entry)
 
         # Deduplicate players within each tournament and build output
         for t_key, players_list in raw_by_tournament.items():

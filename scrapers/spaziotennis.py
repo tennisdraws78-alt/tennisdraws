@@ -452,6 +452,10 @@ def _parse_tournament_page(html: str, tournament_info: dict) -> list[dict]:
         player = _parse_player_line(line) or _parse_wta_player_line(line)
         if player:
             past_header = True
+            entry_method = ""
+            status = player.get("status", "")
+            if status in ("WC", "PR", "LL", "SE"):
+                entry_method = status
             entries.append({
                 "tournament": current_tournament,
                 "tier": current_tier,
@@ -463,6 +467,7 @@ def _parse_tournament_page(html: str, tournament_info: dict) -> list[dict]:
                 "withdrawn": player["withdrawn"],
                 "gender": tournament_info["gender"],
                 "source": "SpazioTennis",
+                "entry_method": entry_method,
             })
 
     # If no structured entries found, try plain-name parsing as fallback.

@@ -32,6 +32,7 @@ from scrapers.wta_official import scrape_all as scrape_wta
 from scrapers.itf_entries import scrape_all as scrape_itf
 from scrapers.wta125_tomist import scrape_all as scrape_wta125
 from scrapers.draw_pdfs import scrape_all as scrape_draws
+from scrapers.wikipedia import scrape_all as scrape_wiki
 from matching.name_matcher import build_player_entry_map
 from output.csv_writer import write_csv
 from output.site_writer import write_site_data
@@ -198,6 +199,11 @@ def main():
         help="Skip Spazio Tennis scraping",
     )
     parser.add_argument(
+        "--skip-wiki",
+        action="store_true",
+        help="Skip Wikipedia wild card scraping",
+    )
+    parser.add_argument(
         "--skip-wta125",
         action="store_true",
         help="Skip WTA 125 TomistGG scraping",
@@ -299,6 +305,16 @@ def main():
         print()
     else:
         print("Skipping ITF Entries (--skip-itf)")
+        print()
+
+    # Source 7: Wikipedia (wild cards, protected rankings, lucky losers)
+    if not args.skip_wiki:
+        time.sleep(1)
+        wiki_entries = scrape_wiki()
+        all_entries.extend(wiki_entries)
+        print()
+    else:
+        print("Skipping Wikipedia (--skip-wiki)")
         print()
 
     # Attach OfficialDraw withdrawal reasons to entries from other sources.

@@ -177,17 +177,30 @@ def _parse_tournaments(data: dict, gender: str, week_dates: dict = None) -> list
                         # 4th element is status flag like "W" for withdrawn
                         withdrawn = len(player) > 3 and player[3] == "W"
 
+                        # Reclassify wild card sections:
+                        # "wc" → Main Draw with entry_method=WC
+                        # "qualWc" → Qualifying with entry_method=WC
+                        entry_method = ""
+                        actual_section = section_label
+                        if section_key == "wc":
+                            entry_method = "WC"
+                            actual_section = "Main Draw"
+                        elif section_key == "qualWc":
+                            entry_method = "WC"
+                            actual_section = "Qualifying"
+
                         entries.append({
                             "tournament": t_name,
                             "tier": tier_name,
                             "week": week_label,
-                            "section": section_label,
+                            "section": actual_section,
                             "player_name": name,
                             "player_rank": rank,
                             "player_country": country,
                             "withdrawn": withdrawn,
                             "gender": gender,
                             "source": "TickTockTennis",
+                            "entry_method": entry_method,
                         })
 
     return entries
