@@ -368,6 +368,7 @@ TOURNAMENT_ALIASES = {
     "dow tennis classic": "Midland",
     "megasaray hotels open": "Antalya",
     "austin 125": "Austin 125",
+    "austin 2": "Austin 125",
     "dubrovnik open": "Dubrovnik",
     "catalonia open solgironès": "La Bisbal d'Emporda",
     "catalonia open solgirones": "La Bisbal d'Emporda",
@@ -404,6 +405,38 @@ def _normalize_tournament_name(name: str) -> str:
     """
     if not name:
         return name
+
+    # Handle URLs (e.g. from TomistGG fallback):
+    # "https://www.wtatennis.com/tournaments/1161/austin-125-1/2026/player-list"
+    # → slug "austin-125-1" → base "austin-125" + event_num=1
+    # "antalya-125-2" → base "antalya-125" + event_num=2 → "Antalya 2"
+    if name.startswith("http"):
+        url_m = re.search(r"/tournaments/\d+/([\w-]+)/\d{4}/", name)
+        if url_m:
+            slug = url_m.group(1)  # e.g. "austin-125-1"
+            # Extract trailing event number: "antalya-125-2" → num=2
+            num_m = re.match(r"^(.+)-(\d+)$", slug)
+            event_num = int(num_m.group(2)) if num_m else 1
+            slug_base = num_m.group(1) if num_m else slug
+            # Try alias lookup: "austin 125" → "Austin 125"
+            slug_spaced = slug_base.replace("-", " ")
+            alias = TOURNAMENT_ALIASES.get(slug_spaced)
+            if alias:
+                # For numbered events beyond 1, append suffix: alias + " 2"
+                if event_num > 1:
+                    return f"{alias} {event_num}"
+                return alias
+            # Fallback: extract city, append event number for >1
+            city = _strip_accents(slug_base.split("-")[0].capitalize())
+            if event_num > 1:
+                return f"{city} {event_num}"
+            return city
+        return name
+
+    # Normalize ITF format: "W75 Trnava" → "Trnava (W75)" to merge with TickTock
+    itf_m = re.match(r"^(W\d+)\s+(.+)$", name)
+    if itf_m:
+        name = f"{itf_m.group(2)} ({itf_m.group(1)})"
 
     # Check alias table first (case-insensitive, accent-insensitive)
     alias = TOURNAMENT_ALIASES.get(_strip_accents(name).lower().strip())

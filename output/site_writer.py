@@ -42,6 +42,41 @@ def _format_dates(dates_str: str, year: int = 2026) -> str:
     return f"{d1} {f1} - {d2} {f2}, {year}"
 
 
+def _resolve_wta125_by_week(base_name: str, week_val: str,
+                            cal: dict) -> str | None:
+    """Find the correct numbered WTA 125 calendar key for a bare city name.
+
+    When WTA Official returns "Antalya" for a Mar 2 entry, we need to figure
+    out it's actually "Antalya 2" (the Mar 2-8 event) vs "Antalya" (Feb 23).
+
+    Returns the matching calendar key, or None if the base name's own week
+    already matches (no renaming needed).
+    """
+    if not week_val:
+        return None
+
+    # Collect all calendar keys sharing the same base city
+    # e.g. base="Antalya" → ["Antalya", "Antalya 2", "Antalya 3"]
+    candidates = []
+    for key, meta in cal.items():
+        if key == base_name or key.startswith(f"{base_name} "):
+            # Parse the calendar start date: "23 Feb - 1 Mar" → "Feb 23"
+            dm = re.match(r"(\d{1,2})\s+(\w{3})", meta[3])
+            if dm:
+                cal_week = _normalize_week(f"{dm.group(2)} {dm.group(1)}")
+                candidates.append((key, cal_week))
+
+    if len(candidates) <= 1:
+        return None  # No numbered variants exist
+
+    # Find which candidate's week matches
+    for key, cal_week in candidates:
+        if cal_week == week_val and key != base_name:
+            return key
+
+    return None  # Base name's week matches, or no match found
+
+
 def write_site_data(
     players: list[dict],
     player_entry_map: dict[str, list[dict]],
@@ -114,6 +149,36 @@ def write_site_data(
             week_val = week_merge_map.get(week_val, week_val)
 
             tourn_name = _normalize_tournament_name(entry.get("tournament", ""))
+            raw_tier = entry.get("tier", "")
+
+            # Infer missing week from calendar (TomistGG URL fallback has empty weeks)
+            if not week_val and raw_tier == "WTA 125":
+                _wta125_cal = getattr(config, "WTA125_CALENDAR", {})
+                _cal_meta = _wta125_cal.get(tourn_name)
+                if _cal_meta:
+                    _dm = re.match(r"(\d{1,2})\s+(\w{3})", _cal_meta[3])
+                    if _dm:
+                        week_val = _normalize_week(f"{_dm.group(2)} {_dm.group(1)}")
+                        week_val = week_merge_map.get(week_val, week_val)
+
+            # Disambiguate WTA 125 bare city names from same-city WTA events.
+            # WTA Official returns bare "Austin" / "Antalya" for WTA 125 events
+            # that TickTock numbers as "Austin 2" / "Antalya 2".  Resolve using
+            # the WTA125 calendar + week matching.
+            if raw_tier == "WTA 125":
+                _wta125_cal = getattr(config, "WTA125_CALENDAR", {})
+                # 1) "City 125" key exists (e.g. Austin → Austin 125)
+                _wta125_key = f"{tourn_name} 125"
+                if _wta125_key in _wta125_cal and tourn_name not in _wta125_cal:
+                    tourn_name = _wta125_key
+                # 2) Numbered variants share the same base city (Antalya → Antalya 2/3)
+                #    Match by week to pick the right numbered key.
+                elif tourn_name in _wta125_cal:
+                    _best = _resolve_wta125_by_week(
+                        tourn_name, week_val, _wta125_cal
+                    )
+                    if _best:
+                        tourn_name = _best
             section = entry.get("section", "")
 
             dedup_key = (tourn_name, section, week_val)
