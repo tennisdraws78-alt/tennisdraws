@@ -585,7 +585,7 @@ function renderTournamentBrowser() {
     var allTiers = {};
     var tournList = D.tournaments || [];
     for (var i = 0; i < tournList.length; i++) {
-        if (tournList[i].tier) allTiers[tournList[i].tier] = true;
+        if (tournList[i].tier && tournList[i].tier !== "ITF") allTiers[tournList[i].tier] = true;
     }
     var tierOrder = [
         "Grand Slam", "ATP 1000", "WTA 1000", "ATP 500", "WTA 500",
