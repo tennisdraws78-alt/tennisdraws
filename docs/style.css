@@ -496,6 +496,16 @@ main {
     margin-top: 1px;
 }
 
+.badge-surface {
+    display: inline-block;
+    font-size: 8px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
 .section-indicator {
     font-size: 9px;
     opacity: 0.7;

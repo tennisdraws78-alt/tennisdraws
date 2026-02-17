@@ -44,6 +44,23 @@ var D = window.TENNIS_DATA || { players: [], weeks: [], tournaments: [], stats: 
     D.weeks = filtered;
 })();
 
+// === TOURNAMENT METADATA LOOKUP ===
+var tournamentMeta = {};
+(function buildTournamentMeta() {
+    var ts = D.tournaments || [];
+    for (var i = 0; i < ts.length; i++) {
+        var t = ts[i];
+        var key = (t.name || "").toLowerCase() + "|" + (t.gender || "").toLowerCase();
+        if (!tournamentMeta[key]) tournamentMeta[key] = t;
+    }
+})();
+
+function lookupSurface(tournamentName, gender) {
+    var key = (tournamentName || "").toLowerCase() + "|" + (gender || "").toLowerCase();
+    var meta = tournamentMeta[key];
+    return meta ? meta.surface : "";
+}
+
 // === STATE ===
 var state = {
     gender: "all",
@@ -380,7 +397,14 @@ function badgeHTML(entry, linkToTournament) {
         wdHTML = isRet ? ' <span class="ret-tag">RET</span>' : ' <span class="wd-tag">WD</span>';
     }
     var tierLabel = entry.tier ? '<span class="badge-tier-label">' + esc(entry.tier) + '</span>' : "";
+    var surface = lookupSurface(entry.tournament, entry.gender);
+    var surfaceHTML = "";
+    if (surface) {
+        var sfcCls = "sfc-" + surface.toLowerCase();
+        surfaceHTML = '<span class="badge-surface ' + sfcCls + '">' + esc(surface).toUpperCase() + '</span>';
+    }
     var title = esc(entry.tournament) + " | " + esc(entry.tier) + " | " + esc(entry.section) +
+        (surface ? " | " + surface : "") +
         (em ? " | " + em : "") +
         (entry.withdrawn && entry.reason ? " | " + esc(entry.reason) : "");
 
@@ -388,10 +412,10 @@ function badgeHTML(entry, linkToTournament) {
         var tGender = entry.gender || "";
         var tLink = encName(entry.tournament) + (tGender ? "|" + encName(tGender) : "");
         return '<a href="#/tournament/' + tLink + '" class="tournament-badge ' + cls + wdCls + '" title="' + title + '">' +
-            esc(entry.tournament) + wdHTML + tierLabel + secHTML + '</a>';
+            esc(entry.tournament) + wdHTML + tierLabel + surfaceHTML + secHTML + '</a>';
     }
     return '<span class="tournament-badge ' + cls + wdCls + '" title="' + title + '">' +
-        esc(entry.tournament) + wdHTML + tierLabel + secHTML + '</span>';
+        esc(entry.tournament) + wdHTML + tierLabel + surfaceHTML + secHTML + '</span>';
 }
 
 // === DASHBOARD VIEW ===
