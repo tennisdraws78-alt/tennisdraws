@@ -436,6 +436,7 @@ main {
 
 .tournament-badge:hover { filter: brightness(1.15); transform: scale(1.05); }
 
+.badge-grand-slam { background: #ca8a04; color: #fefce8; }
 .badge-1000 { background: #7c3aed; color: #f5f3ff; }
 .badge-500 { background: #dc2626; color: #fef2f2; }
 .badge-250 { background: #2563eb; color: #eff6ff; }
@@ -445,6 +446,7 @@ main {
 .badge-other { background: var(--bg-tertiary); color: var(--text-secondary); }
 
 /* Tier glow on hover */
+.badge-grand-slam:hover { box-shadow: 0 0 12px rgba(202, 138, 4, 0.4); }
 .badge-1000:hover { box-shadow: 0 0 12px rgba(124, 58, 237, 0.4); }
 .badge-500:hover { box-shadow: 0 0 12px rgba(220, 38, 38, 0.4); }
 .badge-250:hover { box-shadow: 0 0 12px rgba(37, 99, 235, 0.4); }
@@ -483,6 +485,15 @@ main {
     vertical-align: middle;
     text-decoration: none;
     letter-spacing: 0.5px;
+}
+
+.badge-tier-label {
+    display: block;
+    font-size: 9px;
+    opacity: 0.75;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-top: 1px;
 }
 
 .section-indicator {
@@ -816,6 +827,16 @@ main {
     color: #fff;
     letter-spacing: 0.3px;
 }
+
+/* Tier-colored tournament card labels */
+.tournament-card-tier.tier-grand-slam { color: #fbbf24; }
+.tournament-card-tier.tier-1000 { color: #a78bfa; }
+.tournament-card-tier.tier-500 { color: #f87171; }
+.tournament-card-tier.tier-250 { color: #60a5fa; }
+.tournament-card-tier.tier-challenger { color: #34d399; }
+.tournament-card-tier.tier-125 { color: #fbbf24; }
+.tournament-card-tier.tier-itf { color: #94a3b8; }
+.tournament-card-tier.tier-other { color: var(--text-secondary); }
 
 .tournament-card-surface {
     font-size: 10px;

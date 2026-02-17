@@ -65,6 +65,7 @@ function esc(str) {
 function getBadgeClass(tier) {
     if (!tier) return "badge-other";
     var t = tier.toLowerCase();
+    if (t.indexOf("grand slam") !== -1) return "badge-grand-slam";
     if (t.indexOf("1000") !== -1) return "badge-1000";
     if (t.indexOf("500") !== -1) return "badge-500";
     if (t.indexOf("250") !== -1) return "badge-250";
@@ -72,6 +73,19 @@ function getBadgeClass(tier) {
     if (t.indexOf("125") !== -1) return "badge-125";
     if (t.indexOf("itf") !== -1) return "badge-itf";
     return "badge-other";
+}
+
+function getTierColorClass(tier) {
+    if (!tier) return "tier-other";
+    var t = tier.toLowerCase();
+    if (t.indexOf("grand slam") !== -1) return "tier-grand-slam";
+    if (t.indexOf("1000") !== -1) return "tier-1000";
+    if (t.indexOf("500") !== -1) return "tier-500";
+    if (t.indexOf("250") !== -1) return "tier-250";
+    if (t.indexOf("challenger") !== -1) return "tier-challenger";
+    if (t.indexOf("125") !== -1) return "tier-125";
+    if (t.indexOf("itf") !== -1) return "tier-itf";
+    return "tier-other";
 }
 
 function shortSection(section) {
@@ -365,6 +379,7 @@ function badgeHTML(entry, linkToTournament) {
     if (entry.withdrawn) {
         wdHTML = isRet ? ' <span class="ret-tag">RET</span>' : ' <span class="wd-tag">WD</span>';
     }
+    var tierLabel = entry.tier ? '<span class="badge-tier-label">' + esc(entry.tier) + '</span>' : "";
     var title = esc(entry.tournament) + " | " + esc(entry.tier) + " | " + esc(entry.section) +
         (em ? " | " + em : "") +
         (entry.withdrawn && entry.reason ? " | " + esc(entry.reason) : "");
@@ -373,10 +388,10 @@ function badgeHTML(entry, linkToTournament) {
         var tGender = entry.gender || "";
         var tLink = encName(entry.tournament) + (tGender ? "|" + encName(tGender) : "");
         return '<a href="#/tournament/' + tLink + '" class="tournament-badge ' + cls + wdCls + '" title="' + title + '">' +
-            esc(entry.tournament) + wdHTML + secHTML + '</a>';
+            esc(entry.tournament) + wdHTML + tierLabel + secHTML + '</a>';
     }
     return '<span class="tournament-badge ' + cls + wdCls + '" title="' + title + '">' +
-        esc(entry.tournament) + wdHTML + secHTML + '</span>';
+        esc(entry.tournament) + wdHTML + tierLabel + secHTML + '</span>';
 }
 
 // === DASHBOARD VIEW ===
@@ -702,7 +717,7 @@ function renderTournamentBrowser() {
             var tCardLink = encName(t.name) + (t.gender ? "|" + encName(t.gender) : "");
             html += '<a href="#/tournament/' + tCardLink + '" class="tournament-card">';
             html += '<div class="tournament-card-top">';
-            html += '<span class="tournament-card-tier">' + esc(t.tier) + '</span>';
+            html += '<span class="tournament-card-tier ' + getTierColorClass(t.tier) + '">' + esc(t.tier) + '</span>';
             if (t.surface) {
                 var sfcCls = "sfc-" + t.surface.toLowerCase();
                 html += '<span class="tournament-card-surface ' + sfcCls + '">' + esc(t.surface) + '</span>';
@@ -846,7 +861,7 @@ function renderITFBrowser() {
                 html += '<div class="tournament-card">';
             }
             html += '<div class="tournament-card-top">';
-            html += '<span class="tournament-card-tier">' + esc(t.tier) + '</span>';
+            html += '<span class="tournament-card-tier ' + getTierColorClass(t.tier) + '">' + esc(t.tier) + '</span>';
             if (t.surface) html += '<span class="tournament-card-surface ' + sfcClass + '">' + esc(t.surface) + '</span>';
             html += '</div>';
             html += '<div class="tournament-card-name">' + esc(t.city) + '</div>';
@@ -947,7 +962,7 @@ function renderITFTournamentDetail(key) {
     html += '<div>';
     html += '<div class="tournament-title">' + esc(tourn.name) + '</div>';
     html += '<div class="tournament-meta">';
-    html += '<span class="tournament-card-tier">' + esc(tourn.tier) + '</span>';
+    html += '<span class="tournament-card-tier ' + getTierColorClass(tourn.tier) + '">' + esc(tourn.tier) + '</span>';
     html += genderTag;
     if (tourn.dates) html += '<span class="tournament-week-label">' + esc(tourn.dates) + '</span>';
     html += '<span class="tournament-player-count">' + activeEntries.length + ' players</span>';
@@ -1093,7 +1108,7 @@ function renderTournamentDetail(name, gender) {
         html += '<div class="tournament-location">' + esc(tournMeta.city) + (tournMeta.country ? ', ' + esc(tournMeta.country) : '') + '</div>';
     }
     html += '<div class="tournament-meta">';
-    html += '<span class="tournament-card-tier">' + esc(tourn.tier) + '</span>';
+    html += '<span class="tournament-card-tier ' + getTierColorClass(tourn.tier) + '">' + esc(tourn.tier) + '</span>';
     if (tournMeta && tournMeta.surface) {
         var sfcCls = "sfc-" + tournMeta.surface.toLowerCase();
         html += '<span class="tournament-card-surface ' + sfcCls + '">' + esc(tournMeta.surface) + '</span>';
