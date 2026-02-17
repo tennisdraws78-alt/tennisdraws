@@ -82,6 +82,7 @@ def write_site_data(
     player_entry_map: dict[str, list[dict]],
     raw_entries: list[dict] = None,
     output_dir: str = None,
+    itf_raw_entries: dict = None,
 ) -> str:
     """Generate docs/data.js with all player and tournament data.
 
@@ -91,6 +92,8 @@ def write_site_data(
         raw_entries: Optional list of raw entry dicts for full entry lists
                      (Challenger + WTA 125 tiers — includes unranked players).
         output_dir: Output directory (default: docs/ in project root).
+        itf_raw_entries: Optional dict of ITF tournament entry lists
+                         keyed by composite key (for ITF page display).
 
     Returns:
         Path to the generated data.js file.
@@ -610,7 +613,7 @@ def write_site_data(
     size_kb = os.path.getsize(filepath) / 1024
     print(f"  File size: {size_kb:.0f} KB")
 
-    # --- Write itf_data.js (ITF calendar for separate ITF page) ---
+    # --- Write itf_data.js (ITF calendar + entry lists) ---
     _itf_cal = getattr(config, "ITF_CALENDAR", [])
     if _itf_cal:
         itf_tournaments = []
@@ -624,7 +627,24 @@ def write_site_data(
                 "gender": "Men" if gender == "M" else "Women",
                 "week": _cal_week(dates),
             })
-        itf_data = {"itfTournaments": itf_tournaments}
+
+        # Include ITF entry lists if available
+        itf_entries_output = {}
+        if itf_raw_entries:
+            for t_key, t_data in itf_raw_entries.items():
+                itf_entries_output[t_key] = {
+                    "name": t_data.get("name", ""),
+                    "tier": t_data.get("tier", "ITF"),
+                    "gender": t_data.get("gender", ""),
+                    "week": t_data.get("week", ""),
+                    "dates": t_data.get("dates", ""),
+                    "players": t_data.get("players", []),
+                }
+
+        itf_data = {
+            "itfTournaments": itf_tournaments,
+            "itfEntries": itf_entries_output,
+        }
         itf_path = os.path.join(output_dir, "itf_data.js")
         itf_json = json.dumps(itf_data, ensure_ascii=False, separators=(",", ":"))
         with open(itf_path, "w", encoding="utf-8") as f:
@@ -633,5 +653,9 @@ def write_site_data(
             f.write(";")
         print(f"\nITF data written to: {itf_path}")
         print(f"  ITF tournaments: {len(itf_tournaments)}")
+        if itf_entries_output:
+            total_players = sum(len(e["players"]) for e in itf_entries_output.values())
+            print(f"  ITF entry lists: {len(itf_entries_output)} tournaments, "
+                  f"{total_players} total players")
 
     return filepath

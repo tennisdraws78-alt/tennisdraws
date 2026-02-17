@@ -315,6 +315,14 @@ function route() {
         var itfNav = document.querySelector('[data-nav="itf"]');
         if (itfNav) itfNav.classList.add("active");
         renderITFBrowser();
+    } else if (hash.indexOf("#/itf-tournament/") === 0) {
+        var itfKey = decName(hash.substring(17));
+        state.currentView = "itf-tournament";
+        controls.classList.add("hidden");
+        resultsCount.style.display = "none";
+        var itfNav = document.querySelector('[data-nav="itf"]');
+        if (itfNav) itfNav.classList.add("active");
+        renderITFTournamentDetail(itfKey);
     } else if (hash.indexOf("#/tournament/") === 0) {
         var tournParts = hash.substring(13).split("|");
         var tournName = decName(tournParts[0]);
@@ -738,9 +746,17 @@ function renderTournamentBrowser() {
 }
 
 // === ITF BROWSER VIEW ===
+function buildItfKey(t) {
+    return (t.city || "").toLowerCase() + "|" +
+           (t.tier || "").toLowerCase() + "|" +
+           (t.gender || "").toLowerCase() + "|" +
+           (t.week || "").toLowerCase();
+}
+
 function renderITFBrowser() {
     var container = document.getElementById("app");
     var itfData = (window.ITF_DATA && window.ITF_DATA.itfTournaments) || [];
+    var itfEntries = (window.ITF_DATA && window.ITF_DATA.itfEntries) || {};
 
     if (!itfData.length) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon">🎾</div><div class="empty-title">No ITF calendar data</div></div>';
@@ -820,7 +836,15 @@ function renderITFBrowser() {
         for (var ti = 0; ti < tourns.length; ti++) {
             var t = tourns[ti];
             var sfcClass = "sfc-" + (t.surface || "").toLowerCase().replace(/ *\(i\)/, "").replace("carpet", "hard");
-            html += '<div class="tournament-card">';
+            var entryKey = buildItfKey(t);
+            var hasEntries = !!itfEntries[entryKey];
+            var playerCount = hasEntries ? itfEntries[entryKey].players.length : 0;
+
+            if (hasEntries) {
+                html += '<a href="#/itf-tournament/' + encName(entryKey) + '" class="tournament-card">';
+            } else {
+                html += '<div class="tournament-card">';
+            }
             html += '<div class="tournament-card-top">';
             html += '<span class="tournament-card-tier">' + esc(t.tier) + '</span>';
             if (t.surface) html += '<span class="tournament-card-surface ' + sfcClass + '">' + esc(t.surface) + '</span>';
@@ -828,9 +852,13 @@ function renderITFBrowser() {
             html += '<div class="tournament-card-name">' + esc(t.city) + '</div>';
             html += '<div class="tournament-card-meta">';
             if (t.dates) html += '<span class="tournament-card-dates">' + esc(t.dates) + '</span>';
-            html += '<span class="tournament-card-players">' + esc(t.gender) + '</span>';
+            if (hasEntries) {
+                html += '<span class="tournament-card-players">' + playerCount + ' players</span>';
+            } else {
+                html += '<span class="tournament-card-players">' + esc(t.gender) + '</span>';
+            }
             html += '</div>';
-            html += '</div>';
+            html += hasEntries ? '</a>' : '</div>';
         }
         html += '</div></div>';
     }
@@ -862,6 +890,129 @@ function renderITFBrowser() {
         tierBtns[i].addEventListener("click", function() {
             state.itfTierFilter = this.getAttribute("data-itftier");
             renderITFBrowser();
+        });
+    }
+
+    window.scrollTo(0, 0);
+}
+
+// === ITF TOURNAMENT DETAIL VIEW ===
+function renderITFTournamentDetail(key) {
+    var container = document.getElementById("app");
+    var itfEntries = (window.ITF_DATA && window.ITF_DATA.itfEntries) || {};
+    var tourn = itfEntries[key];
+
+    if (!tourn) {
+        container.innerHTML = '<div class="tournament-detail-view"><div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><a href="#/itf">ITF</a><span class="bc-sep">&#9656;</span><span class="bc-current">Not Found</span></div><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Tournament not found</div><div class="empty-text">This ITF tournament was not found in the database</div></div></div>';
+        return;
+    }
+
+    // Build section list from players
+    var sectionOrder = {"Main Draw": 0, "Qualifying": 1, "Alternates": 2};
+    var sections = {};
+    var activeEntries = [];
+    var wdEntries = [];
+    for (var i = 0; i < tourn.players.length; i++) {
+        var p = tourn.players[i];
+        sections[p.s] = true;
+        if (p.w) wdEntries.push(p);
+        else activeEntries.push(p);
+    }
+    var sectionList = Object.keys(sections).sort(function(a, b) {
+        var oa = sectionOrder[a] !== undefined ? sectionOrder[a] : 9;
+        var ob = sectionOrder[b] !== undefined ? sectionOrder[b] : 9;
+        return oa - ob;
+    });
+
+    if (!state.itfSection) state.itfSection = "all";
+    var currentSection = state.itfSection;
+    if (currentSection !== "all" && !sections[currentSection]) currentSection = "all";
+
+    // Filter by section
+    var entries = activeEntries;
+    if (currentSection !== "all") {
+        entries = entries.filter(function(e) { return e.s === currentSection; });
+    }
+
+    var genderClass = tourn.gender === "Men" ? "gender-men" : "gender-women";
+    var genderTag = tourn.gender === "Men"
+        ? '<span class="gender-tag men">ATP</span>'
+        : '<span class="gender-tag women">WTA</span>';
+
+    var html = '<div class="tournament-detail-view">';
+    html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><a href="#/itf">ITF</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(tourn.name) + '</span></div>';
+
+    // Header
+    html += '<div class="tournament-header">';
+    html += '<div>';
+    html += '<div class="tournament-title">' + esc(tourn.name) + '</div>';
+    html += '<div class="tournament-meta">';
+    html += '<span class="tournament-card-tier">' + esc(tourn.tier) + '</span>';
+    html += genderTag;
+    if (tourn.dates) html += '<span class="tournament-week-label">' + esc(tourn.dates) + '</span>';
+    html += '<span class="tournament-player-count">' + activeEntries.length + ' players</span>';
+    html += '</div></div></div>';
+
+    // Section tabs
+    if (sectionList.length > 1) {
+        html += '<div class="section-tabs">';
+        html += '<button class="section-tab' + (currentSection === "all" ? " active" : "") + '" data-itfsec="all">All (' + activeEntries.length + ')</button>';
+        for (var si = 0; si < sectionList.length; si++) {
+            var sec = sectionList[si];
+            var secCount = activeEntries.filter(function(e) { return e.s === sec; }).length;
+            if (secCount === 0) continue;
+            html += '<button class="section-tab' + (currentSection === sec ? " active" : "") + '" data-itfsec="' + esc(sec) + '">' + esc(sec) + ' (' + secCount + ')</button>';
+        }
+        html += '</div>';
+    }
+
+    // Entry table
+    html += '<table class="entry-table"><thead><tr>';
+    html += '<th>Rank</th><th>Player</th><th>Country</th><th>Section</th>';
+    html += '</tr></thead><tbody>';
+
+    for (var i = 0; i < entries.length; i++) {
+        var e = entries[i];
+        html += '<tr>';
+        html += '<td class="rank-col">' + (e.r > 0 ? e.r : "—") + '</td>';
+        html += '<td class="player-col">' + esc(e.n) + '</td>';
+        html += '<td class="ctry-col">' + esc(e.c) + '</td>';
+        html += '<td>' + esc(e.s) + '</td>';
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+
+    if (entries.length === 0) {
+        html += '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No entries in this section</div></div>';
+    }
+
+    // Withdrawals
+    if (wdEntries.length > 0) {
+        html += '<div class="section-title" style="margin-top:24px">Withdrawals (' + wdEntries.length + ')</div>';
+        html += '<table class="entry-table"><thead><tr>';
+        html += '<th>Rank</th><th>Player</th><th>Country</th><th>Section</th>';
+        html += '</tr></thead><tbody>';
+        for (var wi = 0; wi < wdEntries.length; wi++) {
+            var w = wdEntries[wi];
+            html += '<tr class="withdrawn-row">';
+            html += '<td class="rank-col">' + (w.r > 0 ? w.r : "—") + '</td>';
+            html += '<td class="player-col">' + esc(w.n) + ' <span class="wd-tag">WD</span></td>';
+            html += '<td class="ctry-col">' + esc(w.c) + '</td>';
+            html += '<td>' + esc(w.s) + '</td>';
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    // Wire up section tabs
+    var secBtns = container.querySelectorAll("[data-itfsec]");
+    for (var i = 0; i < secBtns.length; i++) {
+        secBtns[i].addEventListener("click", function() {
+            state.itfSection = this.getAttribute("data-itfsec");
+            renderITFTournamentDetail(key);
         });
     }
 

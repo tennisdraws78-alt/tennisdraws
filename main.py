@@ -298,9 +298,14 @@ def main():
         print()
 
     # Source 6: ITF Entries (requires Playwright)
+    itf_raw_data = {}
     if not args.skip_itf:
         time.sleep(1)
-        itf_entries = scrape_itf(limit=args.limit_itf)
+        itf_result = scrape_itf(limit=args.limit_itf)
+        if isinstance(itf_result, tuple):
+            itf_entries, itf_raw_data = itf_result
+        else:
+            itf_entries = itf_result
         all_entries.extend(itf_entries)
         print()
     else:
@@ -348,7 +353,8 @@ def main():
     # Step 4: Generate output
     print("--- STEP 4: Generating Output ---")
     csv_path = write_csv(players, player_entry_map, args.output)
-    site_path = write_site_data(players, player_entry_map, raw_full)
+    site_path = write_site_data(players, player_entry_map, raw_full,
+                                itf_raw_entries=itf_raw_data)
 
     print()
     print("=" * 60)
