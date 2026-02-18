@@ -61,6 +61,45 @@ function lookupSurface(tournamentName, gender) {
     return meta ? meta.surface : "";
 }
 
+// === COUNTRY NAME LOOKUP ===
+var COUNTRY_NAMES = {
+    "AFG":"Afghanistan","ALB":"Albania","ALG":"Algeria","AND":"Andorra","ANG":"Angola",
+    "ANT":"Antigua and Barbuda","ARG":"Argentina","ARM":"Armenia","ARU":"Aruba","AUS":"Australia",
+    "AUT":"Austria","AZE":"Azerbaijan","BAH":"Bahamas","BDI":"Burundi","BEL":"Belgium",
+    "BEN":"Benin","BER":"Bermuda","BIH":"Bosnia and Herzegovina","BLR":"Belarus","BOL":"Bolivia",
+    "BOT":"Botswana","BRA":"Brazil","BRN":"Bahrain","BRU":"Brunei","BGR":"Bulgaria",
+    "BUL":"Bulgaria","BUR":"Burkina Faso","CAM":"Cambodia","CAN":"Canada","CHE":"Switzerland",
+    "CHI":"Chile","CHL":"Chile","CHN":"China","CIV":"Ivory Coast","CMR":"Cameroon",
+    "COD":"DR Congo","COL":"Colombia","CRC":"Costa Rica","CRO":"Croatia","CUB":"Cuba",
+    "CYP":"Cyprus","CZE":"Czechia","DEU":"Germany","DEN":"Denmark","DNK":"Denmark",
+    "DOM":"Dominican Republic","ECU":"Ecuador","EGY":"Egypt","ESA":"El Salvador","ESP":"Spain",
+    "EST":"Estonia","ETH":"Ethiopia","FIN":"Finland","FRA":"France","GBR":"Great Britain",
+    "GEO":"Georgia","GER":"Germany","GHA":"Ghana","GRC":"Greece","GRE":"Greece",
+    "GUA":"Guatemala","HAI":"Haiti","HKG":"Hong Kong","HON":"Honduras","HRV":"Croatia",
+    "HUN":"Hungary","IDN":"Indonesia","INA":"Indonesia","IND":"India","IRI":"Iran",
+    "IRL":"Ireland","IRQ":"Iraq","ISR":"Israel","ITA":"Italy","JAM":"Jamaica",
+    "JOR":"Jordan","JPN":"Japan","KAZ":"Kazakhstan","KEN":"Kenya","KGZ":"Kyrgyzstan",
+    "KOR":"South Korea","KSA":"Saudi Arabia","KUW":"Kuwait","LAT":"Latvia","LBN":"Lebanon",
+    "LIB":"Libya","LIE":"Liechtenstein","LTU":"Lithuania","LUX":"Luxembourg","LVA":"Latvia",
+    "MAR":"Morocco","MAS":"Malaysia","MDA":"Moldova","MEX":"Mexico","MKD":"North Macedonia",
+    "MLT":"Malta","MNE":"Montenegro","MON":"Monaco","MCO":"Monaco","MRI":"Mauritius",
+    "NED":"Netherlands","NLD":"Netherlands","NEP":"Nepal","NGR":"Nigeria","NOR":"Norway",
+    "NZL":"New Zealand","OMA":"Oman","PAK":"Pakistan","PAN":"Panama","PAR":"Paraguay",
+    "PER":"Peru","PHL":"Philippines","POL":"Poland","POR":"Portugal","PRT":"Portugal",
+    "PRY":"Paraguay","PUR":"Puerto Rico","QAT":"Qatar","ROU":"Romania","RSA":"South Africa",
+    "RUS":"Russia","RWA":"Rwanda","SEN":"Senegal","SRB":"Serbia","SGP":"Singapore",
+    "SLO":"Slovenia","SVK":"Slovakia","SVN":"Slovenia","SRI":"Sri Lanka","SUD":"Sudan",
+    "SUI":"Switzerland","SWE":"Sweden","SYR":"Syria","THA":"Thailand","TJK":"Tajikistan",
+    "TKM":"Turkmenistan","TPE":"Chinese Taipei","TUN":"Tunisia","TUR":"Turkey","TWN":"Chinese Taipei",
+    "UAE":"UAE","UGA":"Uganda","UKR":"Ukraine","URY":"Uruguay","USA":"United States",
+    "UZB":"Uzbekistan","VEN":"Venezuela","VIE":"Vietnam","ZAF":"South Africa","ZIM":"Zimbabwe"
+};
+
+function countryName(code) {
+    if (!code) return "";
+    return COUNTRY_NAMES[code.toUpperCase()] || code;
+}
+
 // === STATE ===
 var state = {
     gender: "all",
@@ -375,7 +414,7 @@ function route() {
 
 // === BADGE COMPONENT ===
 function badgeHTML(entry, linkToTournament) {
-    var cls = getBadgeClass(entry.tier);
+    var cls = "badge-neutral";
     var wdCls = entry.withdrawn ? " withdrawn" : "";
     var sec = shortSection(entry.section);
     var secHTML = (sec && sec !== "MD") ? '<span class="section-indicator">' + sec + '</span>' : "";
@@ -396,7 +435,8 @@ function badgeHTML(entry, linkToTournament) {
     if (entry.withdrawn) {
         wdHTML = isRet ? ' <span class="ret-tag">RET</span>' : ' <span class="wd-tag">WD</span>';
     }
-    var tierLabel = entry.tier ? '<span class="badge-tier-label">' + esc(entry.tier) + '</span>' : "";
+    var tierColorCls = getTierColorClass(entry.tier);
+    var tierLabel = entry.tier ? '<span class="badge-tier-label ' + tierColorCls + '">' + esc(entry.tier) + '</span>' : "";
     var surface = lookupSurface(entry.tournament, entry.gender);
     var surfaceHTML = "";
     if (surface) {
@@ -451,7 +491,7 @@ function renderDashboard() {
     var html = ['<div class="table-container"><table class="player-table"><thead><tr>'];
     html.push('<th class="rk-col">RK</th>');
     html.push('<th class="player-col">Player</th>');
-    html.push('<th class="ctry-col">CTRY</th>');
+    html.push('<th class="ctry-col">COUNTRY</th>');
 
     for (var wi = 0; wi < D.weeks.length; wi++) {
         var weekLabel = D.weeks[wi];
@@ -522,7 +562,7 @@ function playerRowHTML(p) {
     var html = '<tr class="' + rowClass + '">';
     html += '<td class="rk-cell">' + p.rank + '</td>';
     html += '<td class="player-cell"><a href="#/player/' + encName(p.name) + '">' + esc(p.name) + '</a></td>';
-    html += '<td class="ctry-cell">' + esc(p.country) + '</td>';
+    html += '<td class="ctry-cell">' + esc(countryName(p.country)) + '</td>';
 
     for (var wi = 0; wi < D.weeks.length; wi++) {
         var wk = D.weeks[wi];

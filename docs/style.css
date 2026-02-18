@@ -339,7 +339,7 @@ main {
 .player-table th.week-col { text-align: center; min-width: 140px; }
 .player-table th.rk-col { width: 55px; text-align: center; }
 .player-table th.player-col { min-width: 180px; }
-.player-table th.ctry-col { width: 55px; text-align: center; }
+.player-table th.ctry-col { min-width: 90px; text-align: center; }
 
 .player-table tbody tr {
     border-bottom: 1px solid var(--border-color);
@@ -402,9 +402,9 @@ main {
 .player-table td.ctry-cell {
     text-align: center;
     font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    letter-spacing: 0.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
 }
 
 .player-table td.week-cell { text-align: center; padding: 6px 8px; }
@@ -436,6 +436,8 @@ main {
 
 .tournament-badge:hover { filter: brightness(1.15); transform: scale(1.05); }
 
+.badge-neutral { background: #1e293b; color: var(--text-primary); border: 1px solid #334155; }
+.badge-neutral:hover { box-shadow: 0 0 10px rgba(100, 116, 139, 0.3); }
 .badge-grand-slam { background: #ca8a04; color: #fefce8; }
 .badge-1000 { background: #7c3aed; color: #f5f3ff; }
 .badge-500 { background: #dc2626; color: #fef2f2; }
@@ -490,8 +492,7 @@ main {
 .badge-tier-label {
     display: block;
     font-size: 9px;
-    opacity: 0.75;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.3px;
     margin-top: 1px;
 }
@@ -838,15 +839,15 @@ main {
     letter-spacing: 0.3px;
 }
 
-/* Tier-colored tournament card labels */
-.tournament-card-tier.tier-grand-slam { color: #fbbf24; }
-.tournament-card-tier.tier-1000 { color: #a78bfa; }
-.tournament-card-tier.tier-500 { color: #f87171; }
-.tournament-card-tier.tier-250 { color: #60a5fa; }
-.tournament-card-tier.tier-challenger { color: #34d399; }
-.tournament-card-tier.tier-125 { color: #fbbf24; }
-.tournament-card-tier.tier-itf { color: #94a3b8; }
-.tournament-card-tier.tier-other { color: var(--text-secondary); }
+/* Tier-colored labels (used on tournament cards and badge tier labels) */
+.tier-grand-slam { color: #fbbf24; }
+.tier-1000 { color: #a78bfa; }
+.tier-500 { color: #f87171; }
+.tier-250 { color: #60a5fa; }
+.tier-challenger { color: #34d399; }
+.tier-125 { color: #fbbf24; }
+.tier-itf { color: #94a3b8; }
+.tier-other { color: var(--text-secondary); }
 
 .tournament-card-surface {
     font-size: 10px;
