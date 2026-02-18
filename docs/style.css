@@ -777,13 +777,7 @@ main {
 .tier-btn:active { transform: scale(0.96); }
 .tier-btn.active { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(0, 230, 138, 0.08); }
 
-/* Tier-colored active filter buttons */
-.tier-btn.active[data-tier*="1000"] { border-color: #7c3aed; color: #7c3aed; background: rgba(124, 58, 237, 0.08); }
-.tier-btn.active[data-tier*="500"] { border-color: #dc2626; color: #dc2626; background: rgba(220, 38, 38, 0.08); }
-.tier-btn.active[data-tier*="250"] { border-color: #2563eb; color: #2563eb; background: rgba(37, 99, 235, 0.08); }
-.tier-btn.active[data-tier*="hallenger"] { border-color: #059669; color: #059669; background: rgba(5, 150, 105, 0.08); }
-.tier-btn.active[data-tier*="125"] { border-color: #d97706; color: #d97706; background: rgba(217, 119, 6, 0.08); }
-.tier-btn.active[data-tier*="ITF"] { border-color: #64748b; color: #64748b; background: rgba(100, 116, 139, 0.08); }
+/* Tier filter buttons use the default .tier-btn.active style (green accent) */
 
 .week-group {
     margin-bottom: 28px;
@@ -839,15 +833,12 @@ main {
     letter-spacing: 0.3px;
 }
 
-/* Tier-colored labels (used on tournament cards and badge tier labels) */
-.tier-grand-slam { color: #fbbf24; }
-.tier-1000 { color: #a78bfa; }
-.tier-500 { color: #f87171; }
-.tier-250 { color: #60a5fa; }
-.tier-challenger { color: #34d399; }
-.tier-125 { color: #fbbf24; }
-.tier-itf { color: #94a3b8; }
-.tier-other { color: var(--text-secondary); }
+/* Tier labels — bold white (used on tournament cards and badge tier labels) */
+.tier-grand-slam, .tier-1000, .tier-500, .tier-250,
+.tier-challenger, .tier-125, .tier-itf, .tier-other {
+    color: #fff;
+    font-weight: 700;
+}
 
 .tournament-card-surface {
     font-size: 10px;
