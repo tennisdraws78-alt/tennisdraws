@@ -35,7 +35,7 @@ _MONTH_NUM_TO_ABBR = {v: k.capitalize() for k, v in _MONTH_ABBR.items()}
 
 
 def _parse_date_range(dates_str: str) -> tuple[date | None, date | None]:
-    """Parse ITF date string like '16 Feb - 22 Feb 2026' or '16 - 22 Feb'.
+    """Parse ITF date string like '16 Feb - 22 Feb 2026', '16 Feb to 22 Feb 2026', or '16 - 22 Feb'.
 
     Returns (start_date, end_date) or (None, None) on failure.
     """
@@ -54,8 +54,8 @@ def _parse_date_range(dates_str: str) -> tuple[date | None, date | None]:
             return start, end
         except (ValueError, KeyError):
             pass
-    # Try "DD - DD Mon YYYY"
-    m2 = re.match(r"(\d{1,2})\s*-\s*(\d{1,2})\s+(\w{3})(?:\s+(\d{4}))?", dates_str.strip())
+    # Try "DD - DD Mon YYYY" or "DD to DD Mon YYYY"
+    m2 = re.match(r"(\d{1,2})\s*(?:-|to)\s*(\d{1,2})\s+(\w{3})(?:\s+(\d{4}))?", dates_str.strip())
     if m2:
         year = int(m2.group(4)) if m2.group(4) else date.today().year
         mon = _MONTH_ABBR.get(m2.group(3).lower(), 1)
@@ -159,8 +159,9 @@ def _discover_tournaments_from_calendar(page, gender: str) -> list[dict]:
                     if parent:
                         parent_text = parent.as_element().inner_text() if parent.as_element() else ""
                         # Look for date patterns in the parent text
+                        # Handles both "DD Mon - DD Mon YYYY" and "DD Mon to DD Mon YYYY"
                         date_match = re.search(
-                            r"(\d{1,2}\s+\w{3}\s*-\s*\d{1,2}\s+\w{3}(?:\s+\d{4})?)",
+                            r"(\d{1,2}\s+\w{3}\s*(?:-|to)\s*\d{1,2}\s+\w{3}(?:\s+\d{4})?)",
                             parent_text,
                         )
                         if date_match:
@@ -223,7 +224,37 @@ def _parse_itf_official_tables(page, tournament: dict, gender: str) -> list[dict
             elif h == "INFORMATION":
                 info_col = i
 
-        section = section_order[section_idx] if section_idx < len(section_order) else "Alternates"
+        # Detect section from preceding heading text on the page
+        detected_section = ""
+        try:
+            heading_el = table.evaluate_handle(
+                """el => {
+                    let prev = el.previousElementSibling;
+                    for (let i = 0; i < 5 && prev; i++) {
+                        let txt = prev.innerText.trim().toUpperCase();
+                        if (txt.includes('MAIN DRAW')) return prev;
+                        if (txt.includes('QUALIFYING')) return prev;
+                        if (txt.includes('ALTERNATE')) return prev;
+                        prev = prev.previousElementSibling;
+                    }
+                    return null;
+                }"""
+            )
+            if heading_el and heading_el.as_element():
+                heading_text = heading_el.as_element().inner_text().strip().upper()
+                if "MAIN DRAW" in heading_text:
+                    detected_section = "Main Draw"
+                elif "QUALIFYING" in heading_text:
+                    detected_section = "Qualifying"
+                elif "ALTERNATE" in heading_text:
+                    detected_section = "Alternates"
+        except Exception:
+            pass
+
+        if detected_section:
+            section = detected_section
+        else:
+            section = section_order[section_idx] if section_idx < len(section_order) else "Alternates"
         section_idx += 1
 
         for row in rows[1:]:
