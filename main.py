@@ -28,6 +28,7 @@ sys.path.insert(0, ".")
 from rankings.api_client import fetch_atp_rankings, fetch_wta_rankings
 from scrapers.ticktock import scrape_all as scrape_ticktock
 from scrapers.spaziotennis import scrape_all as scrape_spazio
+from scrapers.canaltenis import scrape_all as scrape_canaltenis
 from scrapers.wta_official import scrape_all as scrape_wta
 from scrapers.itf_entries import scrape_all as scrape_itf
 from scrapers.wta125_tomist import scrape_all as scrape_wta125
@@ -199,6 +200,11 @@ def main():
         help="Skip Spazio Tennis scraping",
     )
     parser.add_argument(
+        "--skip-canaltenis",
+        action="store_true",
+        help="Skip Canal Tenis scraping",
+    )
+    parser.add_argument(
         "--skip-wiki",
         action="store_true",
         help="Skip Wikipedia wild card scraping",
@@ -267,7 +273,17 @@ def main():
         print("Skipping Spazio Tennis (--skip-spazio)")
         print()
 
-    # Source 3: WTA Official (requests + BeautifulSoup)
+    # Source 3: Canal Tenis (ATP + WTA + Challengers)
+    if not args.skip_canaltenis:
+        time.sleep(1)
+        canaltenis_entries = scrape_canaltenis()
+        all_entries.extend(canaltenis_entries)
+        print()
+    else:
+        print("Skipping Canal Tenis (--skip-canaltenis)")
+        print()
+
+    # Source 4: WTA Official (requests + BeautifulSoup)
     if not args.skip_wta:
         time.sleep(1)
         wta_entries = scrape_wta()
@@ -277,7 +293,7 @@ def main():
         print("Skipping WTA Official (--skip-wta)")
         print()
 
-    # Source 4: WTA 125 from TomistGG
+    # Source 5: WTA 125 from TomistGG
     if not args.skip_wta125:
         time.sleep(1)
         wta125_entries = scrape_wta125()
@@ -287,7 +303,7 @@ def main():
         print("Skipping WTA 125 TomistGG (--skip-wta125)")
         print()
 
-    # Source 5: Official Draw PDFs (ATP + WTA withdrawals with reasons)
+    # Source 6: Official Draw PDFs (ATP + WTA withdrawals with reasons)
     if not args.skip_draws:
         time.sleep(1)
         draw_entries = scrape_draws()
@@ -297,7 +313,7 @@ def main():
         print("Skipping Official Draw PDFs (--skip-draws)")
         print()
 
-    # Source 6: ITF Entries (requires Playwright)
+    # Source 7: ITF Entries (requires Playwright)
     itf_raw_data = {}
     if not args.skip_itf:
         time.sleep(1)
@@ -312,7 +328,7 @@ def main():
         print("Skipping ITF Entries (--skip-itf)")
         print()
 
-    # Source 7: Wikipedia (wild cards, protected rankings, lucky losers)
+    # Source 8: Wikipedia (wild cards, protected rankings, lucky losers)
     if not args.skip_wiki:
         time.sleep(1)
         wiki_entries = scrape_wiki()

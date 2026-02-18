@@ -19,6 +19,7 @@ ITF_ENTRIES_URL = "https://itf-entries.netlify.app/"
 WTA_API_URL = "https://api.wtatennis.com/tennis/tournaments/"
 WTA_PLAYER_LIST_URL = "https://www.wtatennis.com/tournaments/{id}/{slug}/{year}/player-list"
 WTA125_TOMIST_URL = "https://tomistgg.github.io/tenis-fem-arg/"
+CANALTENIS_CATEGORY_URL = "https://canaltenis.com/category/entrylist/"
 
 # Draw PDF URLs (official draw sheets with withdrawal sections)
 ATP_DRAW_PDF_URL = "https://www.protennislive.com/posting/{year}/{tournament_id}/mds.pdf"
