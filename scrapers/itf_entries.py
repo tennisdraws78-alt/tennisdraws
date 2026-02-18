@@ -85,8 +85,8 @@ def _discover_tournaments_from_calendar(page, gender: str) -> list[dict]:
     """Discover tournaments from the official ITF calendar pages.
 
     Navigates to the ITF tournament calendar for the current and next
-    2 months, extracts tournament links and dates, and filters to
-    tournaments starting within [today - 7d, today + 21d].
+    3 months, extracts tournament links and dates, and filters to
+    upcoming tournaments starting within [today, today + 30d].
     """
     if gender == "M":
         cal_path = "mens-world-tennis-tour-calendar"
@@ -94,14 +94,14 @@ def _discover_tournaments_from_calendar(page, gender: str) -> list[dict]:
         cal_path = "womens-world-tennis-tour-calendar"
 
     today = date.today()
-    cutoff_start = today - timedelta(days=7)
-    cutoff_end = today + timedelta(days=21)
+    cutoff_start = today  # Only upcoming, not past/live
+    cutoff_end = today + timedelta(days=30)  # 1 month ahead
 
     tournaments = []
     seen_urls = set()
     cookies_dismissed = False
 
-    for month_offset in range(3):
+    for month_offset in range(4):
         # Calculate the month to scrape
         target = today.replace(day=1)
         for _ in range(month_offset):
