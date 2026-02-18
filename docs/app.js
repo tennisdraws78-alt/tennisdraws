@@ -107,8 +107,9 @@ var state = {
     entriesOnly: false,
     rankMin: 1,
     rankMax: 1500,
-    currentView: "",           // "dashboard", "tournaments", "player", "tournament"
+    currentView: "",           // "dashboard", "tournaments", "challengers", "player", "tournament"
     tournamentTierFilter: "all",
+    challengerTierFilter: "all",
     tournamentSection: "all",
 };
 
@@ -363,14 +364,14 @@ function route() {
         var tournNav = document.querySelector('[data-nav="tournaments"]');
         if (tournNav) tournNav.classList.add("active");
         renderTournamentBrowser();
-    } else if (hash === "#/entry-lists") {
-        state.currentView = "entry-lists";
+    } else if (hash === "#/challengers") {
+        state.currentView = "challengers";
+        state.challengerTierFilter = "all";
         controls.classList.add("hidden");
         resultsCount.style.display = "none";
-        var elNav = document.querySelector('[data-nav="entry-lists"]');
-        if (elNav) elNav.classList.add("active");
-        state.tournamentTierFilter = "challenger-125";
-        renderTournamentBrowser();
+        var challNav = document.querySelector('[data-nav="challengers"]');
+        if (challNav) challNav.classList.add("active");
+        renderChallengerBrowser();
     } else if (hash === "#/withdrawals") {
         state.currentView = "withdrawals";
         controls.classList.add("hidden");
@@ -401,6 +402,10 @@ function route() {
         controls.classList.add("hidden");
         resultsCount.style.display = "none";
         renderTournamentDetail(tournName, tournGender);
+    } else if (hash === "#/entry-lists") {
+        // Backward compat: redirect old entry-lists URL to challengers
+        window.location.hash = "#/challengers";
+        return;
     } else {
         // Fallback to dashboard
         window.location.hash = "#/";
@@ -587,7 +592,7 @@ function renderPlayerProfile(name) {
     var player = playerIndex[name.toLowerCase()];
 
     if (!player) {
-        container.innerHTML = '<div class="profile-view"><div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(name) + '</span></div><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Player not found</div><div class="empty-text">' + esc(name) + ' was not found in the database</div></div></div>';
+        container.innerHTML = '<div class="profile-view"><div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(name) + '</span></div><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Player not found</div><div class="empty-text">' + esc(name) + ' was not found in the database</div></div></div>';
         return;
     }
 
@@ -609,7 +614,7 @@ function renderPlayerProfile(name) {
     }
 
     var html = '<div class="profile-view">';
-    html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(player.name) + '</span></div>';
+    html += '<div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(player.name) + '</span></div>';
 
     // Header
     html += '<div class="profile-header ' + genderClass + '">';
@@ -712,16 +717,15 @@ function renderTournamentBrowser() {
         return ra - rb;
     });
 
-    // Filter tournaments (ITF tournaments are on a separate page)
+    // Filter tournaments — main tour only (no ITF, no Challenger, no WTA 125)
     var filtered = [];
     for (var i = 0; i < tournList.length; i++) {
         var t = tournList[i];
         if (t.tier === "ITF") continue;
-        if (state.tournamentTierFilter === "challenger-125") {
-            // Special filter: show only Challenger + WTA 125
-            var tl = (t.tier || "").toLowerCase();
-            if (tl.indexOf("challenger") === -1 && tl.indexOf("125") === -1) continue;
-        } else if (state.tournamentTierFilter !== "all" && t.tier !== state.tournamentTierFilter) {
+        var tl = (t.tier || "").toLowerCase();
+        // Exclude Challenger and WTA 125 — they have their own page
+        if (tl.indexOf("challenger") !== -1 || tl.indexOf("125") !== -1) continue;
+        if (state.tournamentTierFilter !== "all" && t.tier !== state.tournamentTierFilter) {
             continue;
         }
         filtered.push(t);
@@ -736,31 +740,19 @@ function renderTournamentBrowser() {
         weekGroups[wk].push(filtered[i]);
     }
 
-    var isEntryListsView = state.tournamentTierFilter === "challenger-125";
-    var viewTitle = isEntryListsView ? "Entry Lists" : "Tournaments";
-
     var html = '<div class="tournaments-view">';
-    html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + viewTitle + '</span></div>';
-    html += '<div class="section-title">' + viewTitle + ' (' + filtered.length + ')</div>';
+    html += '<div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><span class="bc-current">ATP &amp; WTA Entry Lists</span></div>';
+    html += '<div class="section-title">ATP &amp; WTA Entry Lists (' + filtered.length + ')</div>';
 
     // Tier filter buttons
     html += '<div class="tier-filters">';
-    if (isEntryListsView) {
-        // Entry Lists view: show "All" as active (meaning all Challenger+125)
-        html += '<button class="tier-btn active" data-tier="challenger-125">All</button>';
-        // Also add individual tier buttons for the filtered tiers
-        for (var ti = 0; ti < tierList.length; ti++) {
-            var tl = tierList[ti].toLowerCase();
-            if (tl.indexOf("challenger") !== -1 || tl.indexOf("125") !== -1) {
-                html += '<button class="tier-btn" data-tier="' + esc(tierList[ti]) + '">' + esc(tierList[ti]) + '</button>';
-            }
-        }
-    } else {
-        html += '<button class="tier-btn' + (state.tournamentTierFilter === "all" ? " active" : "") + '" data-tier="all">All</button>';
-        for (var ti = 0; ti < tierList.length; ti++) {
-            var isActive = state.tournamentTierFilter === tierList[ti] ? " active" : "";
-            html += '<button class="tier-btn' + isActive + '" data-tier="' + esc(tierList[ti]) + '">' + esc(tierList[ti]) + '</button>';
-        }
+    html += '<button class="tier-btn' + (state.tournamentTierFilter === "all" ? " active" : "") + '" data-tier="all">All</button>';
+    for (var ti = 0; ti < tierList.length; ti++) {
+        // Skip Challenger and WTA 125 tiers from the filter buttons (they have their own page)
+        var tlCheck = tierList[ti].toLowerCase();
+        if (tlCheck.indexOf("challenger") !== -1 || tlCheck.indexOf("125") !== -1) continue;
+        var isActive = state.tournamentTierFilter === tierList[ti] ? " active" : "";
+        html += '<button class="tier-btn' + isActive + '" data-tier="' + esc(tierList[ti]) + '">' + esc(tierList[ti]) + '</button>';
     }
     html += '</div>';
 
@@ -824,6 +816,125 @@ function renderTournamentBrowser() {
     window.scrollTo(0, 0);
 }
 
+// === CHALLENGER BROWSER VIEW ===
+function renderChallengerBrowser() {
+    var container = document.getElementById("app");
+
+    // Collect all unique challenger/125 tiers
+    var allTiers = {};
+    var tournList = D.tournaments || [];
+    for (var i = 0; i < tournList.length; i++) {
+        var t = tournList[i];
+        var tl = (t.tier || "").toLowerCase();
+        if (tl.indexOf("challenger") !== -1 || tl.indexOf("125") !== -1) {
+            allTiers[t.tier] = true;
+        }
+    }
+    var tierOrder = [
+        "ATP Challenger 175", "ATP Challenger 125", "ATP Challenger 100",
+        "ATP Challenger 75", "ATP Challenger 50", "ATP Challenger",
+        "WTA 125"
+    ];
+    var tierRank = {};
+    for (var oi = 0; oi < tierOrder.length; oi++) tierRank[tierOrder[oi]] = oi;
+    var tierList = Object.keys(allTiers).sort(function (a, b) {
+        var ra = tierRank[a] !== undefined ? tierRank[a] : 99;
+        var rb = tierRank[b] !== undefined ? tierRank[b] : 99;
+        return ra - rb;
+    });
+
+    // Filter tournaments — only Challenger + WTA 125
+    var filtered = [];
+    for (var i = 0; i < tournList.length; i++) {
+        var t = tournList[i];
+        var tl = (t.tier || "").toLowerCase();
+        if (tl.indexOf("challenger") === -1 && tl.indexOf("125") === -1) continue;
+        if (state.challengerTierFilter !== "all" && t.tier !== state.challengerTierFilter) continue;
+        filtered.push(t);
+    }
+
+    // Group by week
+    var weekGroups = {};
+    var weekOrder = [];
+    for (var i = 0; i < filtered.length; i++) {
+        var wk = filtered[i].week || "TBD";
+        if (!weekGroups[wk]) { weekGroups[wk] = []; weekOrder.push(wk); }
+        weekGroups[wk].push(filtered[i]);
+    }
+
+    var html = '<div class="tournaments-view">';
+    html += '<div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><span class="bc-current">Challenger Entry Lists</span></div>';
+    html += '<div class="section-title">Challenger Entry Lists (' + filtered.length + ')</div>';
+
+    // Tier filter buttons
+    html += '<div class="tier-filters">';
+    html += '<button class="tier-btn' + (state.challengerTierFilter === "all" ? " active" : "") + '" data-chall-tier="all">All</button>';
+    for (var ti = 0; ti < tierList.length; ti++) {
+        var isActive = state.challengerTierFilter === tierList[ti] ? " active" : "";
+        html += '<button class="tier-btn' + isActive + '" data-chall-tier="' + esc(tierList[ti]) + '">' + esc(tierList[ti]) + '</button>';
+    }
+    html += '</div>';
+
+    // Week groups
+    for (var wi = 0; wi < weekOrder.length; wi++) {
+        var wk = weekOrder[wi];
+        var group = weekGroups[wk];
+        group.sort(function (a, b) {
+            var ra = tierRank[a.tier] !== undefined ? tierRank[a.tier] : 99;
+            var rb = tierRank[b.tier] !== undefined ? tierRank[b.tier] : 99;
+            return ra - rb;
+        });
+        html += '<div class="week-group">';
+        html += '<div class="week-group-header">' + esc(wk) + '</div>';
+        html += '<div class="tournament-grid">';
+        for (var gi = 0; gi < group.length; gi++) {
+            var t = group[gi];
+            var tCardLink = encName(t.name) + (t.gender ? "|" + encName(t.gender) : "");
+            html += '<a href="#/tournament/' + tCardLink + '" class="tournament-card">';
+            html += '<div class="tournament-card-top">';
+            html += '<span class="tournament-card-tier ' + getTierColorClass(t.tier) + '">' + esc(t.tier) + '</span>';
+            if (t.surface) {
+                var sfcCls = "sfc-" + t.surface.toLowerCase();
+                html += '<span class="tournament-card-surface ' + sfcCls + '">' + esc(t.surface) + '</span>';
+            }
+            html += '</div>';
+            html += '<div class="tournament-card-name">' + esc(t.name) + '</div>';
+            if (t.city) {
+                html += '<div class="tournament-card-location">' + esc(t.city) + (t.country ? ', ' + esc(t.country) : '') + '</div>';
+            }
+            html += '<div class="tournament-card-meta">';
+            if (t.dates) {
+                html += '<span class="tournament-card-dates">' + esc(t.dates) + '</span>';
+            }
+            html += '<span class="tournament-card-players">' + t.playerCount + ' players</span>';
+            html += '</div></a>';
+        }
+        html += '</div></div>';
+    }
+
+    if (filtered.length === 0) {
+        html += '<div class="empty-state">' +
+            '<div class="empty-icon">🏟️</div>' +
+            '<div class="empty-title">No challenger tournaments found</div>' +
+            '<div class="empty-text">Try selecting a different tier filter</div>' +
+            '</div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    // Wire up tier filter buttons
+    var tierBtns = container.querySelectorAll("[data-chall-tier]");
+    for (var i = 0; i < tierBtns.length; i++) {
+        tierBtns[i].addEventListener("click", function () {
+            state.challengerTierFilter = this.getAttribute("data-chall-tier");
+            renderChallengerBrowser();
+        });
+    }
+
+    window.scrollTo(0, 0);
+}
+
 // === ITF BROWSER VIEW ===
 function buildItfKey(t) {
     return (t.city || "").toLowerCase() + "|" +
@@ -875,7 +986,7 @@ function renderITFBrowser() {
     });
 
     var html = '<div class="tournament-browser">';
-    html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><span class="bc-current">ITF Calendar</span></div>';
+    html += '<div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><span class="bc-current">ITF Calendar</span></div>';
     html += '<h2 class="section-title">ITF Calendar (' + filtered.length + ')</h2>';
 
     // Gender tabs
@@ -982,7 +1093,7 @@ function renderITFTournamentDetail(key) {
     var tourn = itfEntries[key];
 
     if (!tourn) {
-        container.innerHTML = '<div class="tournament-detail-view"><div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><a href="#/itf">ITF</a><span class="bc-sep">&#9656;</span><span class="bc-current">Not Found</span></div><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Tournament not found</div><div class="empty-text">This ITF tournament was not found in the database</div></div></div>';
+        container.innerHTML = '<div class="tournament-detail-view"><div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><a href="#/itf">ITF</a><span class="bc-sep">&#9656;</span><span class="bc-current">Not Found</span></div><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Tournament not found</div><div class="empty-text">This ITF tournament was not found in the database</div></div></div>';
         return;
     }
 
@@ -1019,7 +1130,7 @@ function renderITFTournamentDetail(key) {
         : '<span class="gender-tag women">WTA</span>';
 
     var html = '<div class="tournament-detail-view">';
-    html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><a href="#/itf">ITF</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(tourn.name) + '</span></div>';
+    html += '<div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><a href="#/itf">ITF</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(tourn.name) + '</span></div>';
 
     // Header
     html += '<div class="tournament-header">';
@@ -1120,7 +1231,7 @@ function renderTournamentDetail(name, gender) {
     }
 
     if (!tourn) {
-        container.innerHTML = '<div class="tournament-detail-view"><div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><a href="#/tournaments">Tournaments</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(name) + '</span></div><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Tournament not found</div><div class="empty-text">' + esc(name) + ' was not found in the database</div></div></div>';
+        container.innerHTML = '<div class="tournament-detail-view"><div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><a href="#/tournaments">Entry Lists</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(name) + '</span></div><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Tournament not found</div><div class="empty-text">' + esc(name) + ' was not found in the database</div></div></div>';
         return;
     }
 
@@ -1150,7 +1261,12 @@ function renderTournamentDetail(name, gender) {
     }
 
     var html = '<div class="tournament-detail-view">';
-    html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><a href="#/tournaments">Tournaments</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(tourn.name) + '</span></div>';
+    // Determine if this is a Challenger/125 tournament for breadcrumb linking
+    var _tierLower = (tourn.tier || "").toLowerCase();
+    var _isChallOrWta125 = _tierLower.indexOf("challenger") !== -1 || _tierLower.indexOf("125") !== -1;
+    var _parentLink = _isChallOrWta125 ? '#/challengers' : '#/tournaments';
+    var _parentLabel = _isChallOrWta125 ? 'Challenger Entry Lists' : 'ATP &amp; WTA Entry Lists';
+    html += '<div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><a href="' + _parentLink + '">' + _parentLabel + '</a><span class="bc-sep">&#9656;</span><span class="bc-current">' + esc(tourn.name) + '</span></div>';
 
     // Find calendar metadata from D.tournaments (match by name + gender)
     var tournMeta = null;
@@ -1312,7 +1428,7 @@ function renderWithdrawals() {
     // Gender filter
     var genderFilter = "all";
     var html = '<div class="withdrawals-view">';
-    html += '<div class="breadcrumbs"><a href="#/">Dashboard</a><span class="bc-sep">&#9656;</span><span class="bc-current">Withdrawals</span></div>';
+    html += '<div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><span class="bc-current">Withdrawals</span></div>';
     // Count unique players
     var uniqueWdPlayers = {};
     for (var i = 0; i < withdrawals.length; i++) {
