@@ -841,6 +841,12 @@ main {
 }
 .tier-125 { color: #c4b5fd; }
 
+/* WTA tier labels — light pink */
+.tier-wta-1000, .tier-wta-500, .tier-wta-250, .tier-wta-finals {
+    color: #fbb6ce;
+    font-weight: 700;
+}
+
 .tournament-card-surface {
     font-size: 10px;
     font-weight: 700;

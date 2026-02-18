@@ -136,6 +136,12 @@ function getTierColorClass(tier) {
     if (!tier) return "tier-other";
     var t = tier.toLowerCase();
     if (t.indexOf("grand slam") !== -1) return "tier-grand-slam";
+    // WTA-specific classes (checked before generic)
+    if (t.indexOf("wta") !== -1 && t.indexOf("1000") !== -1) return "tier-wta-1000";
+    if (t.indexOf("wta") !== -1 && t.indexOf("500") !== -1) return "tier-wta-500";
+    if (t.indexOf("wta") !== -1 && t.indexOf("250") !== -1) return "tier-wta-250";
+    if (t === "wta finals") return "tier-wta-finals";
+    // ATP / generic
     if (t.indexOf("1000") !== -1) return "tier-1000";
     if (t.indexOf("500") !== -1) return "tier-500";
     if (t.indexOf("250") !== -1) return "tier-250";
