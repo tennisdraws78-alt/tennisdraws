@@ -33,6 +33,82 @@ _MONTH_ABBR = {
 }
 _MONTH_NUM_TO_ABBR = {v: k.capitalize() for k, v in _MONTH_ABBR.items()}
 
+# Build reverse lookup: UPPER CASE city -> canonical Title Case city
+# from config.ITF_CALENDAR to handle tricky cases like "ElSheikh"
+_CITY_LOOKUP: dict[str, str] = {}
+
+
+def _build_city_lookup():
+    """Populate _CITY_LOOKUP from config.ITF_CALENDAR."""
+    cal = getattr(config, "ITF_CALENDAR", [])
+    for entry in cal:
+        city = entry[0]  # e.g., "Sharm ElSheikh", "San Diego, CA"
+        _CITY_LOOKUP[city.upper()] = city
+
+
+_build_city_lookup()
+
+# Known ITF tier prefixes (longer first to avoid partial matches)
+_ITF_TIER_PREFIXES = ("W100", "W75", "W50", "W35", "W15", "M25", "M15")
+
+
+def _title_case_city(name: str) -> str:
+    """Convert an UPPER CASE city name to Title Case, preserving state abbreviations.
+
+    "SAN DIEGO, CA" -> "San Diego, CA"
+    "VERO BEACH, FL" -> "Vero Beach, FL"
+    "MONASTIR" -> "Monastir"
+    "SHARM ELSHEIKH" -> "Sharm ElSheikh" (via config lookup)
+    """
+    if not name:
+        return name
+
+    # Try exact lookup from config first
+    canonical = _CITY_LOOKUP.get(name.upper())
+    if canonical:
+        return canonical
+
+    # Split on comma to handle "CITY, STATE" patterns
+    parts = name.split(",")
+    if len(parts) == 2:
+        city = parts[0].strip()
+        state = parts[1].strip()
+        # If state part is 2-3 letters, it's a US state abbreviation — keep uppercase
+        if len(state) <= 3 and state.isalpha():
+            city_title = _CITY_LOOKUP.get(city.upper()) or city.title()
+            return f"{city_title}, {state.upper()}"
+        return f"{city.title()}, {state.title()}"
+
+    return name.title()
+
+
+def _parse_tournament_name(text: str) -> tuple[str, str]:
+    """Parse ITF tournament display name into (city, tier_prefix).
+
+    Input examples from the ITF calendar page:
+        "W100 SAN DIEGO, CA"  -> ("San Diego, CA", "W100")
+        "M25 MONASTIR"        -> ("Monastir", "M25")
+        "W75 PORTO"           -> ("Porto", "W75")
+        "W75 ANDRÉZIEUX-BOUTHÉON" -> ("Andrézieux-Bouthéon", "W75")
+
+    Returns:
+        (city, tier_prefix): city in Title Case, tier_prefix like "W100".
+        If no tier prefix found, returns (text_in_title_case, "").
+    """
+    text = text.strip()
+    tier_prefix = ""
+    city_part = text
+
+    for prefix in _ITF_TIER_PREFIXES:
+        # Match prefix at start (case-insensitive)
+        if text.upper().startswith(prefix + " "):
+            tier_prefix = prefix.upper()
+            city_part = text[len(prefix):].strip()
+            break
+
+    city = _title_case_city(city_part)
+    return city, tier_prefix
+
 
 def _parse_date_range(dates_str: str) -> tuple[date | None, date | None]:
     """Parse ITF date string like '16 Feb - 22 Feb 2026', '16 Feb to 22 Feb 2026', or '16 - 22 Feb'.
@@ -149,35 +225,86 @@ def _discover_tournaments_from_calendar(page, gender: str) -> list[dict]:
                 if href.startswith("/"):
                     href = "https://www.itftennis.com" + href
 
-                # Try to extract dates from the parent row/card
+                # Extract dates from the sibling date cell in the table row
                 dates = ""
                 try:
-                    # Navigate up to find a parent row element
-                    parent = link.evaluate_handle(
-                        "el => el.closest('tr') || el.closest('[class*=\"card\"]') || el.parentElement.parentElement"
+                    date_el = link.evaluate_handle(
+                        """el => {
+                            let row = el.closest('tr');
+                            if (row) {
+                                let dateSpan = row.querySelector('td.date span.date, td.date .date');
+                                if (dateSpan) return dateSpan;
+                                let dateTd = row.querySelector('td.date');
+                                if (dateTd) return dateTd;
+                            }
+                            let card = el.closest('[class*="card"]');
+                            if (card) {
+                                let dateEl = card.querySelector('[class*="date"]');
+                                if (dateEl) return dateEl;
+                            }
+                            return el.parentElement.parentElement;
+                        }"""
                     )
-                    if parent:
-                        parent_text = parent.as_element().inner_text() if parent.as_element() else ""
-                        # Look for date patterns in the parent text
-                        # Handles both "DD Mon - DD Mon YYYY" and "DD Mon to DD Mon YYYY"
+                    if date_el and date_el.as_element():
+                        date_text = date_el.as_element().inner_text().strip()
+                        # Remove "Date:" label if present
+                        date_text = re.sub(r"^Date:\s*", "", date_text, flags=re.IGNORECASE)
                         date_match = re.search(
                             r"(\d{1,2}\s+\w{3}\s*(?:-|to)\s*\d{1,2}\s+\w{3}(?:\s+\d{4})?)",
-                            parent_text,
+                            date_text,
                         )
                         if date_match:
                             dates = date_match.group(1).strip()
                 except Exception:
                     pass
 
-                # Filter by date range if we have dates
-                if dates:
-                    start_dt, _ = _parse_date_range(dates)
-                    if start_dt:
-                        if start_dt < cutoff_start or start_dt > cutoff_end:
-                            continue
+                # Extract category/tier from the sibling category cell
+                cat_text = ""
+                try:
+                    cat_el = link.evaluate_handle(
+                        """el => {
+                            let row = el.closest('tr');
+                            if (row) {
+                                let catSpan = row.querySelector('td.category span.category, td.category .category');
+                                if (catSpan) return catSpan;
+                                let catTd = row.querySelector('td.category');
+                                if (catTd) return catTd;
+                            }
+                            return null;
+                        }"""
+                    )
+                    if cat_el and cat_el.as_element():
+                        cat_text = cat_el.as_element().inner_text().strip()
+                        cat_text = re.sub(r"^Category:\s*", "", cat_text, flags=re.IGNORECASE).strip()
+                except Exception:
+                    pass
+
+                # Skip tournaments without dates (junk links from page header/sidebar)
+                if not dates:
+                    continue
+
+                # Filter by date range
+                start_dt, _ = _parse_date_range(dates)
+                if start_dt:
+                    if start_dt < cutoff_start or start_dt > cutoff_end:
+                        continue
+
+                # Parse tournament name into city + tier prefix
+                city, tier_prefix = _parse_tournament_name(text)
+                # Use category cell as fallback for tier prefix
+                if not tier_prefix and cat_text:
+                    tier_prefix = cat_text.upper()
+
+                # Skip tournaments without a valid tier prefix (e.g., Juniors, Wheelchair)
+                if not tier_prefix:
+                    continue
+
+                full_tier = f"ITF {tier_prefix}"
 
                 tournaments.append({
-                    "name": text,
+                    "name": city,                # "San Diego, CA" (Title Case)
+                    "tier_prefix": tier_prefix,  # "W100"
+                    "full_tier": full_tier,       # "ITF W100"
                     "itf_url": href,
                     "dates": dates,
                 })
@@ -291,7 +418,7 @@ def _parse_itf_official_tables(page, tournament: dict, gender: str) -> list[dict
 
             entries.append({
                 "tournament": tournament["name"],
-                "tier": "ITF",
+                "tier": tournament.get("full_tier", "ITF"),
                 "week": tournament.get("dates", ""),
                 "section": section,
                 "player_name": name,
@@ -422,13 +549,16 @@ def _scrape_gender(gender: str, limit: int = 0) -> tuple[list[dict], dict]:
 
     for entry in all_entries:
         t_name = entry["tournament"]
+        t_tier = entry.get("tier", "ITF")
         week = _normalize_week(entry.get("week", ""))
-        t_key = f"{t_name.lower()}|itf|{gender_label.lower()}|{week.lower()}"
+        # Key format must match frontend buildItfKey():
+        # city.lower() + "|" + tier.lower() + "|" + gender.lower() + "|" + week.lower()
+        t_key = f"{t_name.lower()}|{t_tier.lower()}|{gender_label.lower()}|{week.lower()}"
 
         if t_key not in tourn_meta:
             tourn_meta[t_key] = {
                 "name": t_name,
-                "tier": "ITF",
+                "tier": t_tier,
                 "gender": gender_label,
                 "week": week,
                 "dates": entry.get("week", ""),
