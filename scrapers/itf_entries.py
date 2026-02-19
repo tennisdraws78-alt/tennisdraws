@@ -110,6 +110,21 @@ def _parse_tournament_name(text: str) -> tuple[str, str]:
     return city, tier_prefix
 
 
+def _normalize_player_name(name: str) -> str:
+    """Fix ALL CAPS names from ITF site: 'Martha MATOULA' -> 'Martha Matoula'."""
+    if not name:
+        return name
+    words = name.split()
+    fixed = []
+    for w in words:
+        # Only fix words that are entirely uppercase and longer than 1 char
+        if len(w) > 1 and w.isalpha() and w == w.upper():
+            fixed.append(w.capitalize())
+        else:
+            fixed.append(w)
+    return " ".join(fixed)
+
+
 def _parse_date_range(dates_str: str) -> tuple[date | None, date | None]:
     """Parse ITF date string like '16 Feb - 22 Feb 2026', '16 Feb to 22 Feb 2026', or '16 - 22 Feb'.
 
@@ -362,6 +377,7 @@ def _parse_itf_official_tables(page, tournament: dict, gender: str) -> list[dict
                         if (txt.includes('MAIN DRAW')) return prev;
                         if (txt.includes('QUALIFYING')) return prev;
                         if (txt.includes('ALTERNATE')) return prev;
+                        if (txt.includes('WITHDRAWAL')) return prev;
                         prev = prev.previousElementSibling;
                     }
                     return null;
@@ -369,7 +385,9 @@ def _parse_itf_official_tables(page, tournament: dict, gender: str) -> list[dict
             )
             if heading_el and heading_el.as_element():
                 heading_text = heading_el.as_element().inner_text().strip().upper()
-                if "MAIN DRAW" in heading_text:
+                if "WITHDRAWAL" in heading_text:
+                    detected_section = "Withdrawals"
+                elif "MAIN DRAW" in heading_text:
                     detected_section = "Main Draw"
                 elif "QUALIFYING" in heading_text:
                     detected_section = "Qualifying"
@@ -383,6 +401,10 @@ def _parse_itf_official_tables(page, tournament: dict, gender: str) -> list[dict
         else:
             section = section_order[section_idx] if section_idx < len(section_order) else "Alternates"
         section_idx += 1
+
+        # Skip the Withdrawals table entirely — these are not active entries
+        if section == "Withdrawals":
+            continue
 
         for row in rows[1:]:
             cells = row.query_selector_all("td")
@@ -409,6 +431,13 @@ def _parse_itf_official_tables(page, tournament: dict, gender: str) -> list[dict
 
             if not name or not re.search(r"[A-Za-z]", name):
                 continue
+
+            # Skip placeholder entries like "(Special Exempt, if needed)"
+            if name.startswith("("):
+                continue
+
+            # Normalize ALL CAPS names
+            name = _normalize_player_name(name)
 
             atp_rank = 0
             if rank_col >= 0 and len(cells) > rank_col:
