@@ -122,7 +122,7 @@ WTA_CALENDAR = {
     "Miami": ("Miami", "United States", "Hard", "17 Mar - 29 Mar", "WTA 1000"),
     "Madrid": ("Madrid", "Spain", "Clay", "21 Apr - 3 May", "WTA 1000"),
     "Rome": ("Rome", "Italy", "Clay", "5 May - 17 May", "WTA 1000"),
-    "Montreal": ("Montreal", "Canada", "Hard", "2 Aug - 13 Aug", "WTA 1000"),
+    "Toronto": ("Toronto", "Canada", "Hard", "2 Aug - 13 Aug", "WTA 1000"),
     "Cincinnati": ("Cincinnati", "United States", "Hard", "13 Aug - 24 Aug", "WTA 1000"),
     "Beijing": ("Beijing", "China", "Hard", "30 Sep - 11 Oct", "WTA 1000"),
     "Wuhan": ("Wuhan", "China", "Hard", "12 Oct - 18 Oct", "WTA 1000"),
