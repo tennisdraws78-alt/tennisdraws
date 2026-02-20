@@ -331,6 +331,7 @@ CHALLENGER_CALENDAR = {
     "Brasov": ("Brasov", "Romania", "Clay", "29 Jun - 5 Jul", "ATP Challenger 75"),
     "Troyes": ("Troyes", "France", "Clay", "29 Jun - 5 Jul", "ATP Challenger 50"),
     # ── July ──
+    "Nottingham 3": ("Nottingham", "Great Britain", "Grass", "6 Jul - 12 Jul", "ATP Challenger 50"),
     "Newport": ("Newport", "United States", "Grass", "6 Jul - 12 Jul", "ATP Challenger 125"),
     "Braunschweig": ("Braunschweig", "Germany", "Clay", "6 Jul - 12 Jul", "ATP Challenger 125"),
     "Trieste": ("Trieste", "Italy", "Clay", "6 Jul - 12 Jul", "ATP Challenger 75"),
