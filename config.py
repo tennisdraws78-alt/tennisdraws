@@ -154,7 +154,9 @@ WTA_CALENDAR = {
     "'s-Hertogenbosch": ("'s-Hertogenbosch", "Netherlands", "Grass", "8 Jun - 14 Jun", "WTA 250"),
     "Nottingham": ("Nottingham", "Great Britain", "Grass", "15 Jun - 21 Jun", "WTA 250"),
     "Eastbourne": ("Eastbourne", "Great Britain", "Grass", "22 Jun - 27 Jun", "WTA 250"),
+    "Iasi": ("Iasi", "Romania", "Clay", "13 Jul - 19 Jul", "WTA 250"),
     "Prague": ("Prague", "Czech Republic", "Hard", "20 Jul - 26 Jul", "WTA 250"),
+    "Hamburg": ("Hamburg", "Germany", "Clay", "20 Jul - 26 Jul", "WTA 250"),
     "Monterrey": ("Monterrey", "Mexico", "Hard", "24 Aug - 29 Aug", "WTA 500"),
     "Cleveland": ("Cleveland", "United States", "Hard", "23 Aug - 29 Aug", "WTA 250"),
     "Guadalajara": ("Guadalajara", "Mexico", "Hard", "14 Sep - 20 Sep", "WTA 500"),
@@ -193,8 +195,6 @@ WTA125_CALENDAR = {
     "Birmingham": ("Birmingham", "Great Britain", "Grass", "1 Jun - 7 Jun", "WTA 125"),
     "Foggia": ("Foggia", "Italy", "Clay", "1 Jun - 7 Jun", "WTA 125"),
     "Makarska": ("Makarska", "Croatia", "Clay", "2 Jun - 7 Jun", "WTA 125"),
-    "Iasi": ("Iasi", "Romania", "Clay", "13 Jul - 19 Jul", "WTA 125"),
-    "Hamburg": ("Hamburg", "Germany", "Clay", "20 Jul - 26 Jul", "WTA 125"),
 }
 
 # ── 2026 ATP Challenger Calendar Metadata ──
