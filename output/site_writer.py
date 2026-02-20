@@ -427,10 +427,10 @@ def write_site_data(
     # --- Inject all calendar tournaments that have no scraped entries yet ---
     # Build list of (calendar_dict, gender_label) pairs
     _cal_gender_pairs = [
+        (_atp_cal, "Men"),
+        (_wta_cal, "Women"),
         (_chall_cal, "Men"),
         (_wta125_cal, "Women"),
-        (_wta_cal, "Women"),
-        (_atp_cal, "Men"),
     ]
     seen_keys = {f"{t['name'].lower()}|{t.get('gender', '').lower()}" for t in tournaments_data}
     for cal_dict, cal_gender in _cal_gender_pairs:
