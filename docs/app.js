@@ -769,7 +769,10 @@ function renderTournamentBrowser() {
         group.sort(function (a, b) {
             var ra = tierRank[a.tier] !== undefined ? tierRank[a.tier] : 99;
             var rb = tierRank[b.tier] !== undefined ? tierRank[b.tier] : 99;
-            return ra - rb;
+            if (ra !== rb) return ra - rb;
+            // Same tier + same name: Men (ATP) before Women (WTA)
+            if (a.name === b.name) return a.gender === "Men" ? -1 : 1;
+            return 0;
         });
         html += '<div class="week-group">';
         html += '<div class="week-group-header">' + esc(wk) + '</div>';
