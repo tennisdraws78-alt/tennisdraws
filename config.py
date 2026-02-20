@@ -245,7 +245,7 @@ CHALLENGER_CALENDAR = {
     "Fujairah": ("Fujairah", "United Arab Emirates", "Hard", "2 Mar - 8 Mar", "ATP Challenger 50"),
     "Hersonissos": ("Hersonissos", "Greece", "Hard", "2 Mar - 8 Mar", "ATP Challenger 50"),
     "Kigali 2": ("Kigali", "Rwanda", "Clay", "9 Mar - 15 Mar", "ATP Challenger 100"),
-    "Santiago": ("Santiago", "Chile", "Clay", "9 Mar - 15 Mar", "ATP Challenger 75"),
+    "Santiago CH": ("Santiago", "Chile", "Clay", "9 Mar - 15 Mar", "ATP Challenger 75"),
     "Cherbourg": ("Cherbourg", "France", "Hard (i)", "9 Mar - 15 Mar", "ATP Challenger 75"),
     "Fujairah 2": ("Fujairah", "United Arab Emirates", "Hard", "9 Mar - 15 Mar", "ATP Challenger 50"),
     "Hersonissos 2": ("Hersonissos", "Greece", "Hard", "9 Mar - 15 Mar", "ATP Challenger 50"),

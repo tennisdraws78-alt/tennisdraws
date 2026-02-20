@@ -244,7 +244,7 @@ TOURNAMENT_ALIASES = {
 
     # ── ATP Challenger ──
     "punta cana": "Cap Cana",
-    "santiago 2": "Santiago",
+    "santiago 2": "Santiago CH",
     "bengaluru open": "Bengaluru",
     "workday canberra international": "Canberra",
     "bnc tennis open": "Noumea",
