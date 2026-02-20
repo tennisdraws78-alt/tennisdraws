@@ -243,6 +243,7 @@ TOURNAMENT_ALIASES = {
     "hobart international": "Hobart",
 
     # ── ATP Challenger ──
+    "punta cana": "Cap Cana",
     "bengaluru open": "Bengaluru",
     "workday canberra international": "Canberra",
     "bnc tennis open": "Noumea",
