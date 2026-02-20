@@ -321,7 +321,7 @@ CHALLENGER_CALENDAR = {
     "Ilkley": ("Ilkley", "Great Britain", "Grass", "8 Jun - 14 Jun", "ATP Challenger 125"),
     "Lyon CH": ("Lyon", "France", "Clay", "8 Jun - 14 Jun", "ATP Challenger 100"),
     "Cattolica": ("Cattolica", "Italy", "Clay", "8 Jun - 14 Jun", "ATP Challenger 75"),
-    "Nottingham 2": ("Nottingham", "Great Britain", "Grass", "15 Jun - 21 Jun", "ATP Challenger 125"),
+    "Nottingham 2": ("Nottingham", "Great Britain", "Grass", "13 Jun - 20 Jun", "ATP Challenger 125"),
     "Poznan": ("Poznan", "Poland", "Clay", "15 Jun - 20 Jun", "ATP Challenger 100"),
     "Royan": ("Royan", "France", "Clay", "15 Jun - 20 Jun", "ATP Challenger 50"),
     "Targu Mures": ("Targu Mures", "Romania", "Clay", "22 Jun - 27 Jun", "ATP Challenger 75"),
