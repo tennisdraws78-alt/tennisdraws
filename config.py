@@ -116,8 +116,8 @@ WTA_CALENDAR = {
     "Wimbledon": ("London", "Great Britain", "Grass", "29 Jun - 12 Jul", "Grand Slam"),
     "US Open": ("New York", "United States", "Hard", "30 Aug - 13 Sep", "Grand Slam"),
     # ── WTA 1000 ──
-    "Doha": ("Doha", "Qatar", "Hard", "8 Feb - 14 Feb", "WTA 500"),
-    "Dubai": ("Dubai", "United Arab Emirates", "Hard", "15 Feb - 21 Feb", "WTA 500"),
+    "Doha": ("Doha", "Qatar", "Hard", "8 Feb - 14 Feb", "WTA 1000"),
+    "Dubai": ("Dubai", "United Arab Emirates", "Hard", "15 Feb - 21 Feb", "WTA 1000"),
     "Indian Wells": ("Indian Wells", "United States", "Hard", "4 Mar - 15 Mar", "WTA 1000"),
     "Miami": ("Miami", "United States", "Hard", "17 Mar - 29 Mar", "WTA 1000"),
     "Madrid": ("Madrid", "Spain", "Clay", "21 Apr - 3 May", "WTA 1000"),
