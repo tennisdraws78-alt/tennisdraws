@@ -706,7 +706,7 @@ function renderTournamentBrowser() {
     var allTiers = {};
     var tournList = D.tournaments || [];
     for (var i = 0; i < tournList.length; i++) {
-        if (tournList[i].tier && tournList[i].tier !== "ITF") allTiers[tournList[i].tier] = true;
+        if (tournList[i].tier && tournList[i].tier.indexOf("ITF") === -1) allTiers[tournList[i].tier] = true;
     }
     var tierOrder = [
         "Grand Slam", "ATP 1000", "WTA 1000", "ATP 500", "WTA 500",
@@ -727,7 +727,7 @@ function renderTournamentBrowser() {
     var filtered = [];
     for (var i = 0; i < tournList.length; i++) {
         var t = tournList[i];
-        if (t.tier === "ITF") continue;
+        if ((t.tier || "").indexOf("ITF") !== -1) continue;
         var tl = (t.tier || "").toLowerCase();
         // Exclude Challenger and WTA 125 — they have their own page
         if (tl.indexOf("challenger") !== -1 || tl.indexOf("125") !== -1) continue;
