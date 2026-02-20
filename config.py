@@ -284,6 +284,7 @@ CHALLENGER_CALENDAR = {
     "Rome CH": ("Rome", "Italy", "Clay", "20 Apr - 26 Apr", "ATP Challenger 75"),
     "Shymkent": ("Shymkent", "Kazakhstan", "Clay", "20 Apr - 26 Apr", "ATP Challenger 50"),
     "Abidjan": ("Abidjan", "Ivory Coast", "Hard", "20 Apr - 26 Apr", "ATP Challenger 50"),
+    "Abidjan 2": ("Abidjan", "Ivory Coast", "Hard", "27 Apr - 3 May", "ATP Challenger 50"),
     "Cagliari": ("Cagliari", "Italy", "Clay", "28 Apr - 3 May", "ATP Challenger 175"),
     "Aix-en-Provence": ("Aix-en-Provence", "France", "Clay", "28 Apr - 3 May", "ATP Challenger 175"),
     "Mauthausen": ("Mauthausen", "Austria", "Clay", "27 Apr - 3 May", "ATP Challenger 100"),
