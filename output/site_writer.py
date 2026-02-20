@@ -337,6 +337,12 @@ def write_site_data(
     seen_tournaments = {}
     for player in players_data:
         for entry in player["entries"]:
+            # Skip gender-mismatched entries (e.g. men in WTA 125, women in Challenger)
+            _entry_tier_l = (entry.get("tier") or "").lower()
+            if "125" in _entry_tier_l and player["gender"] == "Men":
+                continue
+            if "challenger" in _entry_tier_l and player["gender"] == "Women":
+                continue
             t_key = f"{entry['tournament'].lower()}|{player['gender'].lower()}"
             if t_key not in seen_tournaments:
                 seen_tournaments[t_key] = {
