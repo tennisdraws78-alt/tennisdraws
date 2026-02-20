@@ -746,9 +746,34 @@ function renderTournamentBrowser() {
         weekGroups[wk].push(filtered[i]);
     }
 
+    // Merge dual-gender Grand Slam entries into single composite cards
+    var totalCards = 0;
+    for (var wk in weekGroups) {
+        var grp = weekGroups[wk];
+        var nameMap = {};
+        var merged = [];
+        for (var mi = 0; mi < grp.length; mi++) {
+            var tt = grp[mi];
+            var isGS = (tt.tier || "").toLowerCase() === "grand slam";
+            if (isGS && nameMap[tt.name] !== undefined) {
+                var ex = merged[nameMap[tt.name]];
+                if (!ex._genders) {
+                    ex._genders = [{ gender: ex.gender, playerCount: ex.playerCount }];
+                }
+                ex._genders.push({ gender: tt.gender, playerCount: tt.playerCount });
+                ex._genders.sort(function (a, b) { return a.gender === "Men" ? -1 : 1; });
+            } else {
+                nameMap[tt.name] = merged.length;
+                merged.push(tt);
+            }
+        }
+        weekGroups[wk] = merged;
+        totalCards += merged.length;
+    }
+
     var html = '<div class="tournaments-view">';
     html += '<div class="breadcrumbs"><a href="#/">Player Schedule</a><span class="bc-sep">&#9656;</span><span class="bc-current">ATP &amp; WTA Entry Lists</span></div>';
-    html += '<div class="section-title">ATP &amp; WTA Entry Lists (' + filtered.length + ')</div>';
+    html += '<div class="section-title">ATP &amp; WTA Entry Lists (' + totalCards + ')</div>';
 
     // Tier filter buttons
     html += '<div class="tier-filters">';
@@ -776,25 +801,54 @@ function renderTournamentBrowser() {
         html += '<div class="tournament-grid">';
         for (var gi = 0; gi < group.length; gi++) {
             var t = group[gi];
-            var tCardLink = encName(t.name) + (t.gender ? "|" + encName(t.gender) : "");
-            html += '<a href="#/tournament/' + tCardLink + '" class="tournament-card">';
-            html += '<div class="tournament-card-top">';
-            html += '<span class="tournament-card-tier ' + getTierColorClass(t.tier) + '">' + esc(t.tier) + '</span>';
-            if (t.surface) {
-                var sfcCls = "sfc-" + t.surface.toLowerCase();
-                html += '<span class="tournament-card-surface ' + sfcCls + '">' + esc(t.surface) + '</span>';
+            if (t._genders) {
+                // Dual-gender Grand Slam card with ATP + WTA buttons
+                html += '<div class="tournament-card tournament-card-dual">';
+                html += '<div class="tournament-card-top">';
+                html += '<span class="tournament-card-tier ' + getTierColorClass(t.tier) + '">' + esc(t.tier) + '</span>';
+                if (t.surface) {
+                    var sfcCls = "sfc-" + t.surface.toLowerCase();
+                    html += '<span class="tournament-card-surface ' + sfcCls + '">' + esc(t.surface) + '</span>';
+                }
+                html += '</div>';
+                html += '<div class="tournament-card-name">' + esc(t.name) + '</div>';
+                if (t.city) {
+                    html += '<div class="tournament-card-location">' + esc(t.city) + (t.country ? ', ' + esc(t.country) : '') + '</div>';
+                }
+                if (t.dates) {
+                    html += '<div class="tournament-card-dates">' + esc(t.dates) + '</div>';
+                }
+                html += '<div class="tournament-card-buttons">';
+                for (var bi = 0; bi < t._genders.length; bi++) {
+                    var g = t._genders[bi];
+                    var gLabel = g.gender === "Men" ? "ATP" : "WTA";
+                    var gLink = encName(t.name) + "|" + encName(g.gender);
+                    html += '<a href="#/tournament/' + gLink + '" class="gs-gender-btn gs-gender-' + gLabel.toLowerCase() + '">';
+                    html += esc(gLabel) + ' (' + g.playerCount + ' players)</a>';
+                }
+                html += '</div></div>';
+            } else {
+                // Standard single-gender card
+                var tCardLink = encName(t.name) + (t.gender ? "|" + encName(t.gender) : "");
+                html += '<a href="#/tournament/' + tCardLink + '" class="tournament-card">';
+                html += '<div class="tournament-card-top">';
+                html += '<span class="tournament-card-tier ' + getTierColorClass(t.tier) + '">' + esc(t.tier) + '</span>';
+                if (t.surface) {
+                    var sfcCls = "sfc-" + t.surface.toLowerCase();
+                    html += '<span class="tournament-card-surface ' + sfcCls + '">' + esc(t.surface) + '</span>';
+                }
+                html += '</div>';
+                html += '<div class="tournament-card-name">' + esc(t.name) + '</div>';
+                if (t.city) {
+                    html += '<div class="tournament-card-location">' + esc(t.city) + (t.country ? ', ' + esc(t.country) : '') + '</div>';
+                }
+                html += '<div class="tournament-card-meta">';
+                if (t.dates) {
+                    html += '<span class="tournament-card-dates">' + esc(t.dates) + '</span>';
+                }
+                html += '<span class="tournament-card-players">' + t.playerCount + ' players</span>';
+                html += '</div></a>';
             }
-            html += '</div>';
-            html += '<div class="tournament-card-name">' + esc(t.name) + '</div>';
-            if (t.city) {
-                html += '<div class="tournament-card-location">' + esc(t.city) + (t.country ? ', ' + esc(t.country) : '') + '</div>';
-            }
-            html += '<div class="tournament-card-meta">';
-            if (t.dates) {
-                html += '<span class="tournament-card-dates">' + esc(t.dates) + '</span>';
-            }
-            html += '<span class="tournament-card-players">' + t.playerCount + ' players</span>';
-            html += '</div></a>';
         }
         html += '</div></div>';
     }

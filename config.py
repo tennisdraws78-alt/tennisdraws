@@ -109,8 +109,12 @@ ATP_CALENDAR = {
 # ── 2026 WTA Tour Calendar Metadata ──
 # Keyed by canonical city name (must match TOURNAMENT_ALIASES values in html_writer.py)
 # Format: (city, country, surface, dates, tier)
-# Note: Grand Slams are in ATP_CALENDAR already; WTA-only entries here
+# Note: Grand Slams (Roland Garros, Wimbledon, US Open) appear in both ATP and WTA calendars
 WTA_CALENDAR = {
+    # ── Grand Slams ──
+    "Roland Garros": ("Paris", "France", "Clay", "24 May - 7 Jun", "Grand Slam"),
+    "Wimbledon": ("London", "Great Britain", "Grass", "29 Jun - 12 Jul", "Grand Slam"),
+    "US Open": ("New York", "United States", "Hard", "30 Aug - 13 Sep", "Grand Slam"),
     # ── WTA 1000 ──
     "Doha": ("Doha", "Qatar", "Hard", "8 Feb - 14 Feb", "WTA 500"),
     "Dubai": ("Dubai", "United Arab Emirates", "Hard", "15 Feb - 21 Feb", "WTA 500"),
