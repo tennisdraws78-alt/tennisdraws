@@ -160,7 +160,7 @@ WTA_CALENDAR = {
     "Guangzhou": ("Guangzhou", "China", "Hard", "26 Oct - 1 Nov", "WTA 250"),
     "Chennai": ("Chennai", "India", "Hard", "2 Nov - 8 Nov", "WTA 250"),
     "Hong Kong": ("Hong Kong", "Hong Kong", "Hard", "2 Nov - 8 Nov", "WTA 250"),
-    "Jiujiang": ("Jiujiang", "China", "Hard", "2 Nov - 8 Nov", "WTA 250"),
+    "Jiangxi": ("Jiujiang", "China", "Hard", "2 Nov - 8 Nov", "WTA 250"),
     "WTA Finals": ("Riyadh", "Saudi Arabia", "Hard", "7 Nov - 14 Nov", "WTA Finals"),
 }
 
