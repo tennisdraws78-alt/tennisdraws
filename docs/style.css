@@ -891,47 +891,6 @@ main {
     margin-left: auto;
 }
 
-/* Grand Slam dual-gender cards */
-.tournament-card-dual {
-    cursor: default;
-}
-.tournament-card-dual:hover {
-    transform: none;
-}
-.tournament-card-buttons {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-}
-.gs-gender-btn {
-    flex: 1;
-    text-align: center;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: all 0.2s;
-}
-.gs-gender-atp {
-    background: rgba(77, 166, 255, 0.12);
-    color: #4da6ff;
-    border: 1px solid rgba(77, 166, 255, 0.25);
-}
-.gs-gender-atp:hover {
-    background: rgba(77, 166, 255, 0.22);
-    border-color: #4da6ff;
-}
-.gs-gender-wta {
-    background: rgba(255, 107, 157, 0.12);
-    color: #ff6b9d;
-    border: 1px solid rgba(255, 107, 157, 0.25);
-}
-.gs-gender-wta:hover {
-    background: rgba(255, 107, 157, 0.22);
-    border-color: #ff6b9d;
-}
-
 /* ===== TOURNAMENT DETAIL VIEW ===== */
 .tournament-detail-view {
     padding: 24px;
