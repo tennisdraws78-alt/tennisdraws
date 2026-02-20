@@ -352,7 +352,6 @@ CHALLENGER_CALENDAR = {
     "Bangkok": ("Nonthaburi", "Thailand", "Hard", "5 Jan - 10 Jan", "ATP Challenger 50"),
     "Bangkok 2": ("Nonthaburi", "Thailand", "Hard", "12 Jan - 17 Jan", "ATP Challenger 75"),
     "New Dehli": ("New Delhi", "India", "Hard", "16 Feb - 22 Feb", "ATP Challenger 75"),
-    "Brasília": ("Brasilia", "Brazil", "Clay", "2 Mar - 8 Mar", "ATP Challenger 75"),
     "Tigre 2": ("Tigre", "Argentina", "Clay", "23 Feb - 1 Mar", "ATP Challenger 50"),
 }
 
