@@ -2,13 +2,21 @@
 
 Primary source: Tennis Abstract (tennisabstract.com) — has 2000+ players, no API key needed.
 Fallback: RapidAPI Tennis Live Data — capped at 500 players per call.
+
+Rankings are cached to rankings/cache.json and refreshed weekly (every Monday).
 """
 from __future__ import annotations
 
+import json
+import os
 import time
+from datetime import datetime, timedelta, timezone
+
 import requests
 from bs4 import BeautifulSoup
 import config
+
+_CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache.json")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -24,6 +32,59 @@ NAME_CORRECTIONS = {
 # Tennis Abstract URLs
 TA_ATP_URL = "https://tennisabstract.com/reports/atpRankings.html"
 TA_WTA_URL = "https://tennisabstract.com/reports/wtaRankings.html"
+
+
+def _last_monday_utc() -> datetime:
+    """Return the start of the most recent Monday (UTC)."""
+    now = datetime.now(timezone.utc)
+    days_since_monday = now.weekday()  # Monday=0
+    last_monday = now - timedelta(days=days_since_monday)
+    return last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def _is_cache_fresh() -> bool:
+    """Check if rankings cache exists and was updated since last Monday UTC."""
+    if not os.path.exists(_CACHE_PATH):
+        return False
+    try:
+        with open(_CACHE_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        updated_str = data.get("updated")
+        if not updated_str:
+            return False
+        updated = datetime.fromisoformat(updated_str)
+        if updated.tzinfo is None:
+            updated = updated.replace(tzinfo=timezone.utc)
+        return updated >= _last_monday_utc()
+    except (json.JSONDecodeError, ValueError, OSError):
+        return False
+
+
+def _load_cache(gender: str) -> list[dict]:
+    """Load cached rankings for a gender ('M' or 'F')."""
+    try:
+        with open(_CACHE_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        key = "atp" if gender == "M" else "wta"
+        return data.get(key, [])
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+def _save_cache(gender: str, players: list[dict]) -> None:
+    """Save fetched rankings to cache for a gender."""
+    data: dict = {}
+    if os.path.exists(_CACHE_PATH):
+        try:
+            with open(_CACHE_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            data = {}
+    key = "atp" if gender == "M" else "wta"
+    data[key] = players
+    data["updated"] = datetime.now(timezone.utc).isoformat()
+    with open(_CACHE_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f)
 
 
 def _fetch_from_tennis_abstract(url: str, gender: str, max_rank: int) -> list[dict]:
@@ -125,34 +186,67 @@ def _fetch_from_rapidapi(url: str, gender: str, max_rank: int) -> list[dict]:
 
 
 def fetch_atp_rankings(max_rank: int = 1500) -> list[dict]:
-    """Fetch ATP rankings up to max_rank."""
+    """Fetch ATP rankings up to max_rank.
+
+    Uses weekly cache — only fetches fresh rankings on Mondays (or when cache
+    is missing/stale).
+    """
     print(f"Fetching ATP rankings (up to {max_rank})...")
+
+    # Check cache first (refreshes weekly on Monday)
+    if _is_cache_fresh():
+        cached = _load_cache("M")
+        if cached:
+            # Filter to max_rank
+            cached = [p for p in cached if p.get("rank", 9999) <= max_rank]
+            print(f"  Using cached ATP rankings ({len(cached)} players, updated this week)")
+            return cached
 
     # Try Tennis Abstract first (has 2000+ players)
     players = _fetch_from_tennis_abstract(TA_ATP_URL, "M", max_rank)
     if players:
         print(f"  Got {len(players)} ATP players from Tennis Abstract")
+        _save_cache("M", players)
         return players
 
-    # Fallback to RapidAPI (capped at 500)
-    print("  Tennis Abstract failed, falling back to RapidAPI (max 500)...")
+    # Fallback to RapidAPI live (capped at 500)
+    print("  Tennis Abstract failed, falling back to RapidAPI Live (max 500)...")
     players = _fetch_from_rapidapi(config.ATP_RANKINGS_URL, "M", max_rank)
-    print(f"  Got {len(players)} ATP players from RapidAPI")
+    print(f"  Got {len(players)} ATP players from RapidAPI Live")
+    if players:
+        _save_cache("M", players)
     return players
 
 
 def fetch_wta_rankings(max_rank: int = 1500) -> list[dict]:
-    """Fetch WTA rankings up to max_rank."""
+    """Fetch WTA rankings up to max_rank.
+
+    Uses weekly cache — only fetches fresh rankings on Mondays (or when cache
+    is missing/stale).
+    """
     print(f"Fetching WTA rankings (up to {max_rank})...")
 
+    # Check cache first (refreshes weekly on Monday)
+    if _is_cache_fresh():
+        cached = _load_cache("F")
+        if cached:
+            cached = [p for p in cached if p.get("rank", 9999) <= max_rank]
+            print(f"  Using cached WTA rankings ({len(cached)} players, updated this week)")
+            return cached
+
+    # Try Tennis Abstract first (has 2000+ players)
     players = _fetch_from_tennis_abstract(TA_WTA_URL, "F", max_rank)
     if players:
         print(f"  Got {len(players)} WTA players from Tennis Abstract")
+        _save_cache("F", players)
         return players
 
-    print("  Tennis Abstract failed, falling back to RapidAPI (max 500)...")
+    # Fallback to RapidAPI live (capped at 500)
+    print("  Tennis Abstract failed, falling back to RapidAPI Live (max 500)...")
     players = _fetch_from_rapidapi(config.WTA_RANKINGS_URL, "F", max_rank)
-    print(f"  Got {len(players)} WTA players from RapidAPI")
+    print(f"  Got {len(players)} WTA players from RapidAPI Live")
+    if players:
+        _save_cache("F", players)
     return players
 
 

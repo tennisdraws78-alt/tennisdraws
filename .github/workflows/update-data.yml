@@ -34,6 +34,6 @@ jobs:
         run: |
           git config user.name "TennisDraws"
           git config user.email "tennisdraws78@gmail.com"
-          git add docs/data.js docs/itf_data.js
+          git add docs/data.js docs/itf_data.js rankings/cache.json
           git diff --staged --quiet || git commit -m "Update tennis data $(date -u +%Y-%m-%d)"
           git push
